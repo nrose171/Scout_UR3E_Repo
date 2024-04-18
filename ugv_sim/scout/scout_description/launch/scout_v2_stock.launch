@@ -1,0 +1,115 @@
+
+<launch>
+    
+    
+    <!-- initial pose -->
+    <arg name="x" default="0.0"/>
+    <arg name="y" default="0.0"/>
+    <arg name="z" default="0.0"/>
+    <arg name="yaw" default="0.0"/>
+    
+    <arg name="scout_name" default="robot"/>
+    <arg name="robot_namespace" default=""/>
+    <arg name="urdf_extras" default="$(find scout_description)/urdf/empty.urdf"/>
+
+    <arg name="pi" default="0.00"/>
+
+    <arg name="robot_joint_states" default=
+    " -J $(arg scout_name)::shoulder_pan_joint $(arg pi) 
+      -J $(arg scout_name)::shoulder_lift_joint $(arg pi)
+      -J $(arg scout_name)::elbow_joint $(arg pi)
+      -J $(arg scout_name)::wrist_1_joint $(arg pi)
+      -J $(arg scout_name)::wrist_2_joint $(arg pi)
+      -J $(arg scout_name)::wrist_3_joint $(arg pi)"/>
+
+
+    <!-- Gazebo parameters -->
+    <arg name="gazebo_model_name" default="$(arg scout_name)" doc="The name to give to the model in Gazebo (after spawning it)." />
+    <arg name="gazebo_world" default="worlds/empty.world" doc="The '.world' file to load in Gazebo." />
+    <arg name="gui" default="true" doc="If true, Gazebo UI is started. If false, only start Gazebo server." />
+    <arg name="paused" default="false" doc="If true, start Gazebo in paused mode. If false, start simulation as soon as Gazebo has loaded." />
+    <arg name="robot_description_param_name" default="robot_description" doc="Name of the parameter which contains the robot description (ie: URDF) which should be spawned into Gazebo." />
+    <arg name="spawn_z" default="0.1" doc="At which height the model should be spawned. NOTE: lower values will cause the robot to collide with the ground plane." />
+    <arg name="start_gazebo" default="true" doc="If true, Gazebo will be started. If false, Gazebo will be assumed to have been started elsewhere." />
+
+    <!--Robot description and related parameter files -->
+    <!-- <arg name="robot_description_file" default="$(find ur_gazebo)/launch/inc/load_ur3e.launch.xml" doc="Launch file which populates the 'robot_description' parameter."/> -->
+    <arg name="joint_limit_params" default="$(find ur_description)/config/ur3e/joint_limits.yaml"/>
+    <arg name="kinematics_params" default="$(find ur_description)/config/ur3e/default_kinematics.yaml"/>
+    <arg name="physical_params" default="$(find ur_description)/config/ur3e/physical_parameters.yaml"/>
+    <arg name="visual_params" default="$(find ur_description)/config/ur3e/visual_parameters.yaml"/>
+
+    <!-- Controller configuration -->
+    <arg name="controller_config_file" default="$(find ur_gazebo)/config/ur3e_controllers.yaml" doc="Config file used for defining the ROS-Control controllers."/>
+    <arg name="controllers" default="joint_state_controller eff_joint_traj_controller" doc="Controllers that are activated by default."/>
+    <arg name="stopped_controllers" default="joint_group_eff_controller" doc="Controllers that are initally loaded, but not started."/>
+
+    <param name="robot_description" command="$(find xacro)/xacro '$(find scout_description)/urdf/scout_v2_ur3e.xacro'
+        robot_namespace:=$(arg robot_namespace) 
+        urdf_extras:=$(arg urdf_extras)" />
+
+
+    <!-- Load controller settings -->
+    <rosparam file="$(arg controller_config_file)" command="load"/>
+
+    <!-- Start Gazebo and load the empty world if requested to do so -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg start_gazebo)">
+        <arg name="world_name" value="$(arg gazebo_world)"/>
+        <arg name="paused" value="$(arg paused)"/>
+        <arg name="gui" value="$(arg gui)"/>
+    </include>
+
+    <!-- Spawn the model loaded earlier in the simulation just started -->
+    <!-- <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model"
+        args="
+        -urdf
+        -param $(arg robot_description_param_name)
+        -model $(arg gazebo_model_name)
+        -z $(arg spawn_z)"
+        output="screen" respawn="false" /> -->
+
+    <node name="spawn_scout_model" pkg="gazebo_ros" type="spawn_model" args="-x $(arg x)
+                -y $(arg y)
+                -z $(arg z)
+                -Y $(arg yaw)
+                -unpause
+                -urdf
+                -param robot_description
+                -model $(arg scout_name)$(arg robot_namespace)
+                $(arg robot_joint_states)" 
+                output="screen"
+                respawn="false"
+                /> 
+
+    <!--$(arg robot_joint_states) ur3e controller-->
+
+
+  <!-- UR3E Files-->
+
+  <!-- robot_state_publisher configuration -->
+  <arg name="tf_prefix" default="" doc="tf_prefix used for the robot."/>
+  <arg name="tf_pub_rate" default="500" doc="Rate at which robot_state_publisher should publish transforms."/>
+
+  <!-- Load urdf on the parameter server -->
+  <!-- <include file="$(arg robot_description_file)">
+    <arg name="joint_limit_params" value="$(arg joint_limit_params)"/>
+    <arg name="kinematics_params" value="$(arg kinematics_params)"/>
+    <arg name="physical_params" value="$(arg physical_params)"/>
+    <arg name="visual_params" value="$(arg visual_params)"/>
+  </include> -->
+
+  <!-- Robot state publisher -->
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="$(arg tf_pub_rate)" />
+    <param name="tf_prefix" value="$(arg tf_prefix)" />
+  </node>
+
+      <!-- Load and start the controllers listed in the 'controllers' arg. -->
+    <node name="ros_control_controller_spawner" pkg="controller_manager" type="spawner"
+        args="$(arg controllers)" output="screen" respawn="false" />
+
+    <!-- Load other controllers, but do not start them -->
+    <node name="ros_control_stopped_spawner" pkg="controller_manager" type="spawner"
+        args="--stopped $(arg stopped_controllers)" output="screen" respawn="false" />
+
+</launch>

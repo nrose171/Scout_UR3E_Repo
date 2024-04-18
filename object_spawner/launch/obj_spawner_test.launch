@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Launches object spawner node -->
+<!-- Requires a running Gazebo simulation -->
+
+<launch>
+
+  <node name="object_spawner_node" pkg="object_spawner" type="object_spawner_test.py" />
+
+</launch>
