@@ -9,8 +9,6 @@
     <xacro:include filename="$(find scout_description)/urdf/scout_wheel_type1.xacro" />
     <xacro:include filename="$(find scout_description)/urdf/scout_wheel_type2.xacro" />
 
-    <!-- <xacro:include filename"$(find scout_description)/urdf/cylinder.xacro" /> -->
-
     <!-- Variables -->
     <xacro:property name="M_PI" value="3.14159"/>
 
@@ -27,6 +25,13 @@
     <xacro:property name="wheel_radius" value="1.6459e-01" />
 
     <!-- Base link -->
+    
+    <!-- <xacro:include filename="$(find scout_description)/urdf/scout_v2.xacro"/> -->
+
+    <!-- <xacro:scout_v2 wheel_prefix="front_left">
+        <origin xyz="${wheelbase/2} ${track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+    </xacro:scout_wheel_type2> -->
+    
     <link name="scout_base_link">
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
@@ -57,9 +62,6 @@
     <link name="inertial_link">
         <inertial>
             <mass value="50" />
-            <!-- <mass value="50" /> -->
-            <!-- <origin xyz="-0.00065 -0.085 0.062" />
-            <inertia ixx="0.6022" ixy="-0.02364" ixz="-0.1197" iyy="1.7386" iyz="-0.001544" izz="2.0296" /> -->
             <origin xyz="0.0 0.0 0.0" />
             <inertia ixx="2.288641" ixy="0" ixz="0" iyy="5.103976" iyz="0" izz="3.431465" />
         </inertial>
@@ -117,6 +119,7 @@
     <xacro:arg name="safety_limits" default="false" doc="If True, enable the safety limits controller"/>
     <xacro:arg name="safety_pos_margin" default="0.15" doc="The lower/upper limits in the safety controller" />
     <xacro:arg name="safety_k_position" default="20" doc="Used to set k position in the safety controller" />
+
 <!-- 
     <xacro:include filename="$(find ur_gazebo)/urdf/ur_macro.xacro"/>
     <xacro:ur_robot_gazebo
@@ -129,9 +132,6 @@
       safety_limits="$(arg safety_limits)"
       safety_pos_margin="$(arg safety_pos_margin)"
       safety_k_position="$(arg safety_k_position)"
-      originx="${-base_y_size+0.1}"
-      originy="0"
-      originz="${base_z_size}"
       /> -->
 
 

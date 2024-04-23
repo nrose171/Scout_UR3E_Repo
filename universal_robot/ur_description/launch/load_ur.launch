@@ -12,6 +12,7 @@
   <arg name="safety_k_position" default="20" doc="Used to set k position in the safety controller" />
 
   <arg name="robot_model" />
+  
 
   <!-- Load the top-level (ie: stand-alone and complete) xacro for the UR
        variant defined by the set of yaml parameter files (so to load a UR5
@@ -32,6 +33,7 @@
   -->
   <param name="robot_description" command="$(find xacro)/xacro '$(find ur_description)/urdf/ur.xacro'
     robot_model:=$(arg robot_model)
+    model:=$(arg robot_joint_states)
     joint_limit_params:=$(arg joint_limit_params)
     kinematics_params:=$(arg kinematics_params)
     physical_params:=$(arg physical_params)
