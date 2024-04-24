@@ -77,7 +77,7 @@ class WaypointFollower:
             else:
                 cmd_vel = Twist()
                 self.cmd_vel_publisher.publish(cmd_vel)  # Stop the robot when close to the waypoint
-                reached_wp(True)
+                return reached_wp(True)
             print(cmd_vel)
             self.rate.sleep()
 

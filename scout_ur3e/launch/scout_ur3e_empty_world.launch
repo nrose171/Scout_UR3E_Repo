@@ -15,7 +15,7 @@
     <arg name="pi" default="0.00"/>
 
     <arg name="robot_joint_states" default=
-    " -J $(arg scout_name)::shoulder_pan_joint $(arg pi) 
+    " -J $(arg scout_name)::shoulder_pan_joint 180.0 
       -J $(arg scout_name)::shoulder_lift_joint $(arg pi)
       -J $(arg scout_name)::elbow_joint $(arg pi)
       -J $(arg scout_name)::wrist_1_joint $(arg pi)

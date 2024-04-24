@@ -51,8 +51,12 @@ import rospy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
-from std_msgs.msg import String
+from geometry_msgs.msg import Pose
+from std_msgs.msg import String, Float32MultiArray
 from moveit_commander.conversions import pose_to_list
+
+import scout_ur3e
+from scout_ur3e.srv import *
 
 
 try:
@@ -94,17 +98,15 @@ def all_close(goal, actual, tolerance):
 
     return True
 
-class MoveGroupPythonInterfaceTutorial(object):
-    """MoveGroupPythonInterfaceTutorial"""
-
+class MoveGroupCommander(object):
+    
     def __init__(self):
-        super(MoveGroupPythonInterfaceTutorial, self).__init__()
+        super(MoveGroupCommander, self).__init__()
 
         ## BEGIN_SUB_TUTORIAL setup
         ##
         ## First initialize `moveit_commander`_ and a `rospy`_ node:
         moveit_commander.roscpp_initialize(sys.argv)
-        rospy.init_node("move_group_python_interface_tutorial", anonymous=True)
 
         ## Instantiate a `RobotCommander`_ object. Provides information such as the robot's
         ## kinematic model and the robot's current joint states
@@ -115,11 +117,7 @@ class MoveGroupPythonInterfaceTutorial(object):
         ## surrounding world:
         scene = moveit_commander.PlanningSceneInterface()
 
-        ## Instantiate a `MoveGroupCommander`_ object.  This object is an interface
-        ## to a planning group (group of joints).  In this tutorial the group is the primary
-        ## arm joints in the Panda robot, so we set the group's name to "panda_arm".
-        ## If you are using a different robot, change this value to the name of your robot
-        ## arm planning group.
+        #  Set planning group 
         ## This interface can be used to plan and execute motions:
         group_name = "manipulator"
         move_group = moveit_commander.MoveGroupCommander(group_name)
@@ -132,12 +130,6 @@ class MoveGroupPythonInterfaceTutorial(object):
             queue_size=20,
         )
 
-        ## END_SUB_TUTORIAL
-
-        ## BEGIN_SUB_TUTORIAL basic_info
-        ##
-        ## Getting Basic Information
-        ## ^^^^^^^^^^^^^^^^^^^^^^^^^
         # We can get the name of the reference frame for this robot:
         planning_frame = move_group.get_planning_frame()
         print("============ Planning frame: %s" % planning_frame)
@@ -157,6 +149,19 @@ class MoveGroupPythonInterfaceTutorial(object):
         print("")
         ## END_SUB_TUTORIAL
 
+        # Setting Planning Params
+        planner = "RRTConnect"
+        ref_frame = "base_link"
+        planning_attempts = 100  # planning attempts
+        planning_time = 50  # [s] Planning time for computation
+
+        move_group.set_planner_id(planner)
+        move_group.set_pose_reference_frame("base_link")
+        move_group.allow_replanning(True)        
+        move_group.set_goal_tolerance(0.05)
+        move_group.set_num_planning_attempts(planning_attempts)
+        move_group.set_planning_time(planning_time)
+
         # Misc variables
         self.box_name = ""
         self.robot = robot
@@ -167,109 +172,113 @@ class MoveGroupPythonInterfaceTutorial(object):
         self.eef_link = eef_link
         self.group_names = group_names
 
-    def go_to_joint_state(self):
-        # Copy class variables to local variables to make the web tutorials more clear.
-        # In practice, you should use the class variables directly unless you have a good
-        # reason not to.
-        move_group = self.move_group
+    # Go to state based on joint angles
+    def go_to_joint_state(self, jointArr):
 
-        ## BEGIN_SUB_TUTORIAL plan_to_joint_state
-        ##
-        ## Planning to a Joint Goal
-        ## ^^^^^^^^^^^^^^^^^^^^^^^^
-        ## The Panda's zero configuration is at a `singularity <https://www.quora.com/Robotics-What-is-meant-by-kinematic-singularity>`_, so the first
-        ## thing we want to do is move it to a slightly better configuration.
-        ## We use the constant `tau = 2*pi <https://en.wikipedia.org/wiki/Turn_(angle)#Tau_proposals>`_ for convenience:
-        # We get the joint values from the group and change some of the values:
-        joint_goal = move_group.get_current_joint_values()
-        joint_goal[0] = 0
-        joint_goal[1] = -tau / 8
-        joint_goal[2] = 0
-        joint_goal[3] = -tau / 4
-        joint_goal[4] = 0
-        joint_goal[5] = tau / 6  # 1/6 of a turn
-        joint_goal[6] = 0
+        # Set Joint States
+        joint_goal = self.move_group.get_current_joint_values()
 
-        # The go command can be called with joint values, poses, or without any
-        # parameters if you have already set the pose or joint target for the group
-        move_group.go(joint_goal, wait=True)
+        print("Heard: ")
+        print(jointArr.data)
 
-        # Calling ``stop()`` ensures that there is no residual movement
-        move_group.stop()
+        for i  in range(6):
+            joint_goal[i] = jointArr.data[0]
 
-        ## END_SUB_TUTORIAL
+        # joint_goal[0] = 0
+        # joint_goal[1] = -tau / 8
+        # joint_goal[2] = 0
+        # joint_goal[3] = -tau / 4
+        # joint_goal[4] = 0
+        # joint_goal[5] = tau / 6  # 1/6 of a turn
+        # joint_goal[6] = 0
 
-        # For testing:
-        current_joints = move_group.get_current_joint_values()
+        # Execute Joint States
+        self.move_group.go(joint_goal, wait=True)
+
+        # Stop Movement
+        self.move_group.stop()
+
+        # Close all controller Tasks
+        current_joints = self.move_group.get_current_joint_values()
+
+        # Return true if within tolerance
         return all_close(joint_goal, current_joints, 0.01)
 
-    def go_to_pose_goal(self, x, y, z):
-        # Copy class variables to local variables to make the web tutorials more clear.
-        # In practice, you should use the class variables directly unless you have a good
-        # reason not to.
-        move_group = self.move_group
-
-        ## BEGIN_SUB_TUTORIAL plan_to_pose
-        ##
-        ## Planning to a Pose Goal
-        ## ^^^^^^^^^^^^^^^^^^^^^^^
-        ## We can plan a motion for this group to a desired pose for the
-        ## end-effector:
-        pose_goal = geometry_msgs.msg.Pose()
-        pose_goal.orientation.w = 1.0
-        pose_goal.position.x = x
-        pose_goal.position.y = y
-        pose_goal.position.z = z
-
-        move_group.set_pose_target(pose_goal)
+    def go_to_pose_goal(self, gp):
+        # Set goal Pose
+        pose_goal = gp.pose
+        self.move_group.set_pose_target(pose_goal)
 
         ## Now, we call the planner to compute the plan and execute it.
         # `go()` returns a boolean indicating whether the planning and execution was successful.
-        success = move_group.go(wait=True)
+        success = self.move_group.go(wait=True)
+
         # Calling `stop()` ensures that there is no residual movement
-        move_group.stop()
-        # It is always good to clear your targets after planning with poses.
-        # Note: there is no equivalent function for clear_joint_value_targets().
-        move_group.clear_pose_targets()
+        self.move_group.stop()
 
-        ## END_SUB_TUTORIAL
+        # Clear target goal pose
+        self.move_group.clear_pose_targets()
 
-        # For testing:
-        # Note that since this section of code will not be included in the tutorials
-        # we use the class variable rather than the copied state variable
+        # Close all controller tasks
         current_pose = self.move_group.get_current_pose().pose
-        return all_close(pose_goal, current_pose, 0.01)
-    
-def main():
+        all_close(pose_goal, current_pose, 0.01)
+
+        return success
+
+def start_JointState_server():
+    rospy.init_node('scout_manip')
+    s = rospy.Service('manip_joint_srv', GoToManipJoints, start_manip_joints)
+    print("Waiting for Manip Joint States")
+    rospy.spin()
+
+def start_manip_joints(jointArr):
     try:
-        print("")
-        print("----------------------------------------------------------")
-        print("Welcome to the MoveIt MoveGroup Python Interface Tutorial")
-        print("----------------------------------------------------------")
-        print("Press Ctrl-D to exit at any time")
-        print("Setting up commander")
+        print("Starting Manip GP Commander")
         
-        tutorial = MoveGroupPythonInterfaceTutorial()
+        commander = MoveGroupCommander()
 
-        # input(
-        #     "============ Press `Enter` to execute a movement using a joint state goal ..."
-        # )
-        # tutorial.go_to_joint_state()
-
-        n = len(sys.argv)
-        print("Args passed:")
-        print(sys.argv)
-
-        if n > 3:
-            tutorial.go_to_pose_goal(float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3]))
+        if jointArr is not None:
+            return commander.go_to_joint_state(jointArr)
         else:
-            print("Please pass x y z args")
+            print("Please pass manipulator goal point")
             
-        print("============ Python tutorial demo complete!")
+    except rospy.ROSInterruptException:
+        return
+    except KeyboardInterrupt:
+        return
+
+def start_GoalPoint_server():
+    rospy.init_node('scout_manip')
+    s = rospy.Service('manip_gp_srv', GoToManipGP, start_manip_gp)
+    print("Waiting for Manip Goal Point")
+    rospy.spin()
+
+def start_manip_gp(gp):
+    try:
+        print("Starting Manip GP Commander")
+        
+        commander = MoveGroupCommander()
+
+        if gp is not None:
+            return commander.go_to_pose_goal(gp)
+        else:
+            print("Please pass manipulator goal point")
+            
     except rospy.ROSInterruptException:
         return
     except KeyboardInterrupt:
         return
     
+    
+def main():
+    args = sys.argv
+
+    if len(args) > 1 and args[1] == "joint":
+        print("Calling Joints")
+        start_JointState_server()
+    else:
+        print("Calling GP")
+        start_GoalPoint_server()
+
 if __name__ == "__main__":
     main()
