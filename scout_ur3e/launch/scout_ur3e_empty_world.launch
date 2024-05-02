@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <launch>
 
+    <env name="GAZEBO_MODEL_PATH" value="$(find object_spawner)/models/" />
+
     <!-- Scout files -->
 
     <!-- initial pose -->
@@ -61,5 +63,8 @@
       output="screen"
       respawn="false"
     /> 
+
+    <!-- Spawn Boat -->
+    <!-- <include file="$(find object_spawner)/launch/obj_spawner_test.launch"/> -->
 
 </launch>

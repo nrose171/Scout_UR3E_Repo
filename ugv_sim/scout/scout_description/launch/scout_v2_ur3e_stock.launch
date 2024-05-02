@@ -41,10 +41,23 @@
     <rosparam file="$(arg controller_config_file)" command="load"/>
 
     <!-- Start Gazebo and load the empty world if requested to do so -->
-    <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg start_gazebo)">
+    <!-- <include file="$(find gazebo_ros)/launch/empty_world.launch" if="$(arg start_gazebo)">
         <arg name="world_name" value="$(arg gazebo_world)"/>
         <arg name="paused" value="$(arg paused)"/>
         <arg name="gui" value="$(arg gui)"/>
+    </include> -->
+
+
+    <!-- Start Gazebo Playpen -->
+    <arg name="world_name" default="$(find scout_gazebo_sim)/worlds/clearpath_playpen.world"/>
+
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(arg world_name)"/>
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="gui" value="true"/>
+        <arg name="headless" value="false"/>
+        <arg name="debug" value="false"/>
     </include>
 
 

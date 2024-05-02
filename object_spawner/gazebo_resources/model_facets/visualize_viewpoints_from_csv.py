@@ -1,5 +1,11 @@
+#!/usr/bin/env python3
+
 import rospy
+import rospkg
 import numpy as np
+import pandas as pd
+import transforms3d as t3d
+import os
 from geometry_msgs.msg import Pose, PoseArray
 import argparse
 import csv
@@ -21,113 +27,109 @@ def get_mesh(filename):
     mesh.header.stamp = rospy.Time.now()
     return mesh
 
-def get_normals(csv_file):
-    pose_arr = PoseArray()
-    pose_arr.header.frame_id = 'map'
-    pose_arr.header.stamp = rospy.Time.now()
+def read_csv_get_poses_arr(csv_file):
+    df = pd.read_csv(csv_file)
+    points = df.iloc[:, :3].values
+    quaternions = df.iloc[:, 3:7].values
 
+    pose_arr_1 = PoseArray()
+    pose_arr_1.header.frame_id = 'map'
+    pose_arr_1.header.stamp = rospy.Time.now()
+
+    for i in range(len(points)):
+        pose = Pose()
+        pose.position.x = points[i, 0]
+        pose.position.y = points[i, 1]
+        pose.position.z = points[i, 2]
+        pose.orientation.x = quaternions[i, 0]
+        pose.orientation.y = quaternions[i, 1]
+        pose.orientation.z = quaternions[i, 2]
+        pose.orientation.w = quaternions[i, 3]
+        pose_arr_1.poses.append(pose)
+
+    return points, quaternions, pose_arr_1
+
+def process_pose_array(points, quaternions):
     pose_arr_2 = PoseArray()
     pose_arr_2.header.frame_id = 'map'
     pose_arr_2.header.stamp = rospy.Time.now()
 
-    centers = []
-    quat = []
-    centers_2 = []
-    quat_2 = []
-    with open(csv_file) as csvfile:
-        reader = csv.reader(csvfile, delimiter=',')
-        for row in reader:
-            if row[0] == 'x':
-                continue
-            # print(row)
-            # print(row[0])
-            row = np.array(row, dtype=np.float64)
-            center = np.zeros((3,),dtype=np.float64)
-            q = np.zeros((4,),dtype=np.float64)
-            center_2 = np.zeros((3,),dtype=np.float64)
-            q_2 = np.zeros((4,),dtype=np.float64)
-            center[0] = float(row[0])
-            center[1] = float(row[1])
-            center[2] = float(row[2])
-            q[0] = float(row[3])
-            q[1] = float(row[4])
-            q[2] = float(row[5])
-            q[3] = float(row[6])
-            
-            dist = 0.25
-            conj = [-1.0*q[0], -1.0*q[1], -1.0*q[2], q[3]]
-            mag = math.sqrt(math.pow(q[0], 2)+math.pow(q[1], 2)+math.pow(q[2], 2)+math.pow(q[3], 2))
+    dist = .750  # Distance to shift the points (in meters)
+    flip_matrix = np.array([
+        [-1, 0, 0],
+        [0, 1, 0],
+        [0, 0, -1]
+    ])
 
-            q_2[0] = conj[0]/math.pow(mag, 2)
-            q_2[1] = conj[1]/math.pow(mag, 2)
-            q_2[2] = conj[2]/math.pow(mag, 2)
-            q_2[3] = conj[3]/math.pow(mag, 2)
+    for i in range(len(points)):
+        # Convert quaternion to rotation matrix
+        q = quaternions[i]
+        rot_matrix = np.array([
+            [1 - 2*q[1]**2 - 2*q[2]**2, 2*q[0]*q[1] - 2*q[2]*q[3], 2*q[0]*q[2] + 2*q[1]*q[3]],
+            [2*q[0]*q[1] + 2*q[2]*q[3], 1 - 2*q[0]**2 - 2*q[2]**2, 2*q[1]*q[2] - 2*q[0]*q[3]],
+            [2*q[0]*q[2] - 2*q[1]*q[3], 2*q[1]*q[2] + 2*q[0]*q[3], 1 - 2*q[0]**2 - 2*q[1]**2]
+        ])
 
-            # D_x = 2 * (q[0]*q[2] + q[3]*q[1])
-            # D_y = 2 * (q[1]*q[2] - q[3]*q[0])
-            # D_z = 1 - 2 * (q[0]*q[0] + q[1]*q[1])
+        # Calculate the direction vector from the rotation matrix
+        direction = rot_matrix[:, 0]  # First column of the rotation matrix
 
-            D_x = 2 * (q[1]*q[3] + q[0]*q[2])
-            D_y = 2 * (q[2]*q[3] - q[0]*q[1])
-            D_z = 1 - 2 * (q[1]*q[1] + q[2]*q[2])
+        # Shift the point by the specified distance in the direction of the quaternion
+        shifted_point = points[i] + dist * direction
+        # direction = t3d.mat2quat(rot_matrix[:, 0].T)
 
-            D_arr = [D_x, D_y, D_z]
-            D = [float(i)/sum(D_arr) for i in D_arr]
+                # Multiply the rotation matrix by the flip matrix
+        flipped_matrix = np.dot(rot_matrix, flip_matrix)
 
-            # center_2[0] = float(row[0]) + dist * D[0]
-            # center_2[1] = float(row[1]) + dist * D[1]
-            # center_2[2] = float(row[2]) + dist * D[2]
-            center_2[0] = float(row[0]) 
-            center_2[1] = float(row[1]) 
-            center_2[2] = float(row[2]) 
-            centers.append(center)
-            quat.append(q)
-            centers_2.append(center_2)
-            quat_2.append(q_2)
-    centers = np.array(centers)
-    quat = np.array(quat)
-    centers_2 = np.array(centers_2)
-    quat_2 = np.array(quat_2)
-    # print("centers max = {}".format(np.amax(centers,axis=0)))
-    # print("centers min = {}".format(np.amin(centers,axis=0)))
-    for i in range(len(centers)):
+        # Convert the flipped rotation matrix back to a quaternion
+        flipped_quat = quaternion_from_matrix(flipped_matrix)
+
         pose = Pose()
-        pose.position.x = centers[i,0]
-        pose.position.y = centers[i,1]
-        pose.position.z = centers[i,2]
-        pose.orientation.x = quat[i,0]
-        pose.orientation.y = quat[i,1]
-        pose.orientation.z = quat[i,2]
-        pose.orientation.w = quat[i,3]
-        pose_arr.poses.append(pose)
-
-    for i in range(len(centers_2)):
-        pose = Pose()
-        pose.position.x = centers_2[i,0]
-        pose.position.y = centers_2[i,1]
-        pose.position.z = centers_2[i,2]
-        pose.orientation.x = quat_2[i,0]
-        pose.orientation.y = quat_2[i,1]
-        pose.orientation.z = quat_2[i,2]
-        pose.orientation.w = quat_2[i,3]
+        pose.position.x = shifted_point[0]
+        pose.position.y = shifted_point[1]
+        pose.position.z = shifted_point[2]
+        pose.orientation.x = flipped_quat[0]
+        pose.orientation.y = flipped_quat[1]
+        pose.orientation.z = flipped_quat[2]
+        pose.orientation.w = flipped_quat[3]
         pose_arr_2.poses.append(pose)
 
+    return pose_arr_2
 
-    return pose_arr, pose_arr_2
+def quaternion_from_matrix(matrix):
+    # Extract the rotation matrix components
+    m00, m01, m02, m10, m11, m12, m20, m21, m22 = matrix.flatten()
+
+    # Calculate the quaternion components
+    q0 = np.sqrt(max(0, 1 + m00 + m11 + m22)) / 2
+    q1 = np.sqrt(max(0, 1 + m00 - m11 - m22)) / 2
+    q2 = np.sqrt(max(0, 1 - m00 + m11 - m22)) / 2
+    q3 = np.sqrt(max(0, 1 - m00 - m11 + m22)) / 2
+
+    # Determine the signs of the quaternion components
+    q1 = q1 * np.sign(m21 - m12)
+    q2 = q2 * np.sign(m02 - m20)
+    q3 = q3 * np.sign(m10 - m01)
+
+    return np.array([q1, q2, q3, q0])
 
 def main():
     rospy.init_node('publish_normal')
+    rospack = rospkg.RosPack()
+    dir_path = rospack.get_path('object_spawner')
+
     parser = argparse.ArgumentParser(description='Publish normal vectors as quaternions for visualization in RViz')
-    parser.add_argument('-c','--csv_file', type=str, help='csv file containing normal vectors', default='boat.csv')
-    parser.add_argument('-m','--mesh_file', type=str, help='mesh file to visualize normals')
+    parser.add_argument('-c','--csv_file', type=str, help='csv file containing normal vectors', default=dir_path + "/gazebo_resources/model_facets/boat.csv")
+    parser.add_argument('-m','--mesh_file', type=str, help='mesh file to visualize normals', default= dir_path + "/gaebo_resources/models/boat/meshes/boat.dae")
     args = parser.parse_args()
 
     pub = rospy.Publisher('/pose', PoseArray, queue_size=10)
     pub_2 = rospy.Publisher('/pose_2', PoseArray, queue_size=10)
     mesh_pub = rospy.Publisher('/mesh', Marker, queue_size=10)
     rate = rospy.Rate(1)
-    poses, poses_2 = get_normals(args.csv_file)
-    mesh = get_mesh('../models/boat/meshes/boat.dae')
+
+    points, quaternions, poses = read_csv_get_poses_arr(args.csv_file)
+    poses_2 = process_pose_array(points, quaternions)
+    mesh = get_mesh(args.mesh_file)
     print("publishing normals as posearray")
     while not rospy.is_shutdown():
         mesh_pub.publish(mesh)

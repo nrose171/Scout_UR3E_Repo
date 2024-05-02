@@ -66,6 +66,21 @@ Reference:
         <fdir1>1 0 0</fdir1>
         <!--maxContacts value="64"/-->
     </gazebo>
+
+
+    <!-- <gazebo>
+        <plugin name="skid_steer_drive_controller" filename="libgazebo_ros_skid_steer_drive.so">
+            <updateRate>100.0</updateRate>
+            <robotBaseFrame>base_link</robotBaseFrame>
+            <commandTopic>cmd_vel</commandTopic>
+            <broadcastTF>true</broadcastTF>
+            <odometryTopic>odom</odometryTopic>
+            <odometryFrame>odom</odometryFrame>
+            <covariance_x>0.00000</covariance_x>
+            <covariance_y>0.00000</covariance_y>
+            <covariance_yaw>0.00000</covariance_yaw>
+        </plugin>
+    </gazebo> -->
     
     <!-- <gazebo>
         <plugin name="skid_steer_drive_controller" filename="libgazebo_ros_skid_steer_drive.so">
@@ -77,7 +92,7 @@ Reference:
             <rightRearJoint>rear_right_wheel</rightRearJoint>
             <wheelSeparation>4</wheelSeparation>
             <wheelDiameter>0.32918</wheelDiameter>
-            <robotBaseFrame>base_link</robotBaseFrame>
+            <robotBaseFrame>scout_base_link</robotBaseFrame>
             <torque>1000</torque>
             <commandTopic>cmd_vel</commandTopic>
             <broadcastTF>true</broadcastTF>

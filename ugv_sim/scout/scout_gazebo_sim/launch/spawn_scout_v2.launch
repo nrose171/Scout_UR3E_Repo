@@ -14,9 +14,9 @@
     <arg name="headless" default="false" />
     <arg name="debug" default="true" />
 
-    <!-- <include file="$(find scout_description)/launch/scout_v2_stock.launch">
+    <include file="$(find scout_description)/launch/scout_v2_stock.launch">
         <arg name="robot_namespace" value="$(arg robot_namespace)" />
-    </include> -->
+    </include>
 
     <node name="spawn_scout_model" pkg="gazebo_ros" type="spawn_model" args="-x $(arg x)
               -y $(arg y)

@@ -1,0 +1,12 @@
+<launch>
+
+  <!-- Bring up SCOUT 2.0 -->
+  <include file="$(find scout_ur3e)/launch/scout_ur3e_empty_world.launch"/>
+
+  <!-- SLAM: Gmapping -->
+  <include file="$(find scout_ur3e)/launch/scout_ur3e_gmapping.launch"/>
+
+  <!-- rviz -->
+  <include file="$(find scout_ur3e)/launch/display_scout_ur3e.launch"/>
+
+</launch>

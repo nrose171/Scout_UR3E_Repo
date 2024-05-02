@@ -1,0 +1,20 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="cmd_vel_topic" default="/cmd_vel" />
+  <arg name="odom_topic" default="/odom" />
+  <arg name="dir_path" default="$(find scout_ur3e)/params"/>
+
+  <!-- move_base -->
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <!-- <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" /> -->
+    <rosparam file="$(arg dir_path)/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(arg dir_path)/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(arg dir_path)/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(arg dir_path)/global_costmap_params.yaml" command="load" />
+    <rosparam file="$(arg dir_path)/move_base_params.yaml" command="load" />
+    <rosparam file="$(arg dir_path)/base_local_planner_params.yaml" command="load" />
+    <!-- <rosparam file="$(arg dir_path)/dwa_local_planner_params.yaml" command="load" /> -->
+    <remap from="cmd_vel" to="$(arg cmd_vel_topic)"/>
+    <remap from="odom" to="$(arg odom_topic)"/>
+  </node>
+</launch>

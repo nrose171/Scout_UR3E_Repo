@@ -25,7 +25,7 @@
     <xacro:property name="wheel_radius" value="1.6459e-01" />
 
     <!-- Base link -->
-    <link name="base_link">
+    <link name="scout_base_link">
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <geometry>
@@ -52,7 +52,7 @@
         <child link="chassis_link" />
     </joint> -->
 
-    <link name="inertial_link">
+    <link name="scout_inertial_link">
         <inertial>
             <mass value="50" />
             <!-- <mass value="50" /> -->
@@ -63,10 +63,10 @@
         </inertial>
     </link>
 
-    <joint name="inertial_joint" type="fixed">
+    <joint name="scout_inertial_joint" type="fixed">
         <origin xyz="0 0 0" rpy="0 0 0" />
-        <parent link="base_link" />
-        <child link="inertial_link" />
+        <parent link="scout_base_link" />
+        <child link="scout_inertial_link" />
     </joint>
 
     <!-- For testing, hang the robot up in the air -->
