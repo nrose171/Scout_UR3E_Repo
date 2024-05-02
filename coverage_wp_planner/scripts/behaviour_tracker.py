@@ -4,7 +4,7 @@ import logging
 logging.basicConfig(format='[%(filename)s:%(lineno)d] %(message)s', level=logging.INFO)
 import time
 import rospy
-from geometry_msgs.msg import Pose, Twist, PoseArray, Point
+from geometry_msgs.msg import Pose, PoseArray, Point
 from visualization_msgs.msg import Marker
 
 from std_msgs.msg import Header
@@ -14,14 +14,64 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import os
 from scipy.spatial import ConvexHull
-
 from coverage_wp_planner.srv import *
 
-from matplotlib.animation import FuncAnimation
+import networkx as nx
 
-def process_pose_array(poses, dist, horizontal=False, num_skip=1):   # Distance to shift the points (in meters)
+ 
+def create_graph_perform_dfs(pose_df, comp_boat_df, arm_base_point, max_dist_node_idx):
+    print(pose_df)
+    pose_df_idx = pose_df.index
+    G = nx.Graph()
+    # Add nodes to the graph
+    for index, row in pose_df.iterrows():
+        # print(index, row)
+        G.add_node(index, pos=(row['x'], row['y']))
+
+    
+
+    # Add edges between adjacent points
+    for i in range(len(pose_df)):
+        for j in range(i+1, len(pose_df)):
+            if (abs(pose_df.iloc[i]['x'] - pose_df.iloc[j]['x']) <= 1 and \
+                abs(pose_df.iloc[i]['y'] - pose_df.iloc[j]['y']) <= 1 and \
+                abs(pose_df.iloc[i]['z'] - pose_df.iloc[j]['z']) <= 1):
+                print(pose_df_idx[i], pose_df_idx[j])
+                G.add_edge(pose_df_idx[i], pose_df_idx[j])
+
+    dfs_node_order = list(nx.dfs_preorder_nodes(G, source=max_dist_node_idx))
+    print(dfs_node_order)
+    # print(pose_df['x'][dfs_node_order])
+    # print(pose_df['y'][dfs_node_order])
+
+    fig = plt.figure()
+    ax_3d = fig.add_subplot(111, projection='3d')
+    ax_3d.scatter(comp_boat_df['x'].values, 
+                  comp_boat_df['y'].values, 
+                  comp_boat_df['z'].values, marker='o', color="r")
+    ax_3d.plot(pose_df['x'][dfs_node_order].values, 
+                  pose_df['y'][dfs_node_order].values, 
+                  pose_df['z'][dfs_node_order].values, marker='^', color="b")
+    ax_3d.scatter(arm_base_point[0], arm_base_point[1], arm_base_point[2], marker='o', color="g")
+
+    ax_3d.set_xlim3d(1, 6)
+    ax_3d.set_ylim3d(-1, 1)
+    ax_3d.set_zlim3d(0, 1)
+
+    plt.pause(5)
+    plt.show(block=False)
+
+    # Perform DFS on the graph
+    print("Depth-First Search (DFS) traversal:")
+    return dfs_node_order
+    
+
+
+
+def process_pose_array(poses, dist, horizontal=False, arm_base_height=0.25,num_skip=1):   # Distance to shift the points (in meters)
     processed_pose_arr = PoseArray()
     processed_pose_arr.header.frame_id = 'map'
     processed_pose_arr.header.stamp = rospy.Time.now()
@@ -56,7 +106,7 @@ def process_pose_array(poses, dist, horizontal=False, num_skip=1):   # Distance 
         flipped_quat /= np.linalg.norm(flipped_quat)
 
         if horizontal:
-            shifted_point[2] = 0
+            shifted_point[2] = arm_base_height
             flipped_quat = quat_horiz_parallel_to_surface(flipped_quat)
 
         pose = Pose()
@@ -93,7 +143,7 @@ def quat_horiz_parallel_to_surface(quaternion):
     z_axis = np.array([0, 0, 1])
     perpendicular_vector = np.cross([qx, qy, qz], z_axis)
     perpendicular_vector /= np.linalg.norm(perpendicular_vector)
-    perpendicular_quaternion = np.append(perpendicular_vector, 0)    
+    perpendicular_quaternion = np.append(-1 * perpendicular_vector, 0)
     return perpendicular_quaternion
 
 def get_mesh(filename):
@@ -148,16 +198,14 @@ class BehaviourTracker:
         # boat_df["y"] += 5
         self.boat_df["visited"] = False
         
-        # self.boat_df = boat_df.sort_values(['x', 'z', 'y'], ascending=[True, True, True])
+        self.boat_df = self.boat_df.sort_values(['x', 'z', 'y'], ascending=[True, True, True])
         self.boat_center_x, self.boat_center_y = self.boat_df[['x', 'y']].mean(axis=0)
         self.boat_length = self.boat_df["x"].max() - self.boat_df["x"].min()
         self.boat_width = self.boat_df["y"].max() - self.boat_df["y"].min()
 
         self.boat_xy_hull = ConvexHull(self.boat_df[["x", "y"]])
-        self.boat_hull_vertices = self.boat_df.iloc[self.boat_xy_hull.vertices][["x", "y"]]
         self.boat_hull_vertices = self.boat_df.iloc[self.boat_xy_hull.vertices][["x", "y"]] #.sort_values(['x', 'y'], ascending=[True, True])
         self.boat_hull_vertices["angle_around_center"] = np.arctan2(self.boat_hull_vertices["y"] - self.boat_center_y, self.boat_hull_vertices["x"] - self.boat_center_x)
-        print(self.boat_hull_vertices)
         self.boat_hull_vertices = self.boat_hull_vertices.sort_values(["angle_around_center"], ascending=[True])
 
 
@@ -180,6 +228,7 @@ class BehaviourTracker:
             rospy.loginfo("There are no points in the given boat.csv")
         
         self.arm_reach = 1
+        self.mb_arm_base_height = 0.25
 
         # rospy.wait_for_service('wp_2_twist_srv')
         self.rate = rospy.Rate(0.1)  # 10 Hz
@@ -188,7 +237,8 @@ class BehaviourTracker:
         while not rospy.is_shutdown():
             # mb_unvisited_wp = self.boat_df.iloc[:1] #[self.boat_df["visited"] == False  & (self.boat_df["near_surface"] == True)]
             # call wp2twist service to get to boat_df.iloc[self.next_wp]
-            while(len(self.boat_df[self.boat_df["visited"] == True]) < 0.99 * len(self.boat_df)):
+            # while(len(self.boat_df[self.boat_df["visited"] == True]) < 0.99 * len(self.boat_df)):
+            while len(self.boat_df[(self.boat_df["near_surface"] == True)]) > self.next_wp:
                 mb_unvisited_wp = self.boat_df[(self.boat_df["near_surface"] == True)].iloc[self.next_wp:self.next_wp + 1]
                 print("================================")
                 print(mb_unvisited_wp)
@@ -198,20 +248,19 @@ class BehaviourTracker:
                 self.boat_vis_pub.publish(self.boat_facet_pose_array)
                 self.mesh_pub.publish(self.mesh)
 
-                self.mb_wps_pose_array = process_pose_array(self.boat_df[(self.boat_df["near_surface"] == True)], 
-                                                                        dist = 0.35*self.arm_reach, horizontal=True, num_skip=1)
-                self.pub_curr_ee_pose_array.publish(self.mb_wps_pose_array)
-
                 try:
-                    rospy.loginfo(mb_unvisited_wp)
+                    # rospy.loginfo(mb_unvisited_wp)
                     if len(mb_unvisited_wp) == 0: break
-                    self.mobile_base_pose_array = process_pose_array(mb_unvisited_wp, dist = 0.35*self.arm_reach, horizontal=True)
+                    mb_unvisited_wp["z"] += self.mb_arm_base_height
+                    self.mobile_base_pose_array = process_pose_array(mb_unvisited_wp, dist = 0.35*self.arm_reach, horizontal=True, arm_base_height=self.mb_arm_base_height)
                     base_position = self.mobile_base_pose_array.poses[0].position
                     base_x, base_y, base_z = base_position.x, base_position.y, base_position.z
                     base_point = np.array([base_x, base_y, base_z]).T
                     boat_point_dist = self.boat_df[["x", "y", "z"]][(self.boat_df["visited"] == False)].sub(base_point, axis=1).pow(2).sum(axis=1).pow(.5)
                     # boat_point_dist = self.boat_df[["x", "y", "z"]][(self.boat_df["visited"] == False)].sub(base_point, axis=1).pow(2).sum(axis=1).pow(.5)
                     self.pub_mb_pose_array.publish(self.mobile_base_pose_array)
+
+                    # new_boat_df = self.boat_df.copy(deep=True)                    
 
                     # print(check_point_in_hull([[self.boat_center_x + self.boat_length/2, self.boat_center_y + self.boat_width/2]], self.boat_xy_hull, eps=0.2, print_eps=True))
                     # print(check_point_in_hull([[self.boat_center_x - self.boat_length/2, self.boat_center_y - self.boat_width/2]], self.boat_xy_hull, eps=0.2, print_eps=True))
@@ -220,16 +269,27 @@ class BehaviourTracker:
 
                     print([base_x, base_y], check_point_in_hull([[base_x, base_y]], self.boat_xy_hull, eps=0.2, print_eps=True))
                     if not check_point_in_hull([[base_x, base_y]], self.boat_xy_hull, eps=0.2, print_eps=True):
-                        unvisited_reachable_poses = self.boat_df[(self.boat_df["visited"] == False)][boat_point_dist < 0.75*self.arm_reach]
-                        rospy.loginfo(unvisited_reachable_poses)
+                        unvisited_reachable_poses = self.boat_df[(self.boat_df["visited"] == False) & (boat_point_dist < 0.75*self.arm_reach)]
+                        # print("unvisited_reachable_poses : ", len(unvisited_reachable_poses))
+                        print(unvisited_reachable_poses)
                         # unvisited_reachable_poses = all_reachable_poses[all_reachable_poses["visited"] == False]
-                        self.end_effector_pose_array = process_pose_array(self.boat_df.iloc[unvisited_reachable_poses.index], 
-                                                                        dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
-                        self.visited_end_effector_pose_array = process_pose_array(self.boat_df[self.boat_df["visited"] == True], 
+                        farthest_point_idx = boat_point_dist[unvisited_reachable_poses.index].idxmax()
+                        
+                        pose_visit_order = create_graph_perform_dfs(self.boat_df.loc[unvisited_reachable_poses.index, :], self.boat_df, base_point, farthest_point_idx)
+                        for node_idx in pose_visit_order:
+                            self.boat_vis_pub.publish(self.boat_facet_pose_array)
+                            self.mesh_pub.publish(self.mesh)
+                            self.pub_mb_pose_array.publish(self.mobile_base_pose_array)
+
+                            self.end_effector_pose_array = process_pose_array(self.boat_df.loc[unvisited_reachable_poses.index, :], #.iloc[node_idx:node_idx+1], 
+                                                                            dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
+                            self.pub_curr_ee_pose_array.publish(self.end_effector_pose_array)
+                            self.boat_df.loc[node_idx, ["visited"]] = True
+                            self.visited_end_effector_pose_array = process_pose_array(self.boat_df[self.boat_df["visited"] == True], 
                                                                                 dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
-                        self.pub_curr_ee_pose_array.publish(self.end_effector_pose_array)
-                        self.pub_ee_pose_array.publish(self.visited_end_effector_pose_array)
-                        self.boat_df.loc[unvisited_reachable_poses.index, ["visited"]] = True
+                            self.pub_ee_pose_array.publish(self.visited_end_effector_pose_array)
+                            print(" ", end="")
+                        
                     
                     # rospy.loginfo(boat_point_dist.idxmax())
 
