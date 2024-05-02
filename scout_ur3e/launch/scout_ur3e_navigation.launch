@@ -6,6 +6,9 @@
   <!-- Scout UR3E -->
   <include file="$(find scout_ur3e)/launch/scout_ur3e_empty_world.launch"/>
 
+  <!-- Spawn Boat -->
+  <include file="$(find object_spawner)/launch/obj_spawner_test.launch"/>
+
   <!-- SLAM -->
   <include file="$(find scout_ur3e)/launch/scout_ur3e_gmapping.launch"/>
 

@@ -12,6 +12,7 @@ gz_re_path = dir_path + "/gazebo_resources/models"
 spawn_model_client = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
 
 def spawn_model(m_path, m_name, start_pose):
+    rospy.wait_for_service('/gazebo/spawn_sdf_model')
     spawn_model_client(
         model_name=m_name,
         model_xml=open(m_path, 'r').read(),

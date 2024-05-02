@@ -139,28 +139,10 @@ class PoseControllerService:
                     twist.angular.z = proportional_yaw_to_target + self.ki_angular * self.integral_yaw_to_target + self.kd_angular * derivative_yaw_to_target
                     self.cmd_vel_pub.publish(twist)
             else:
-<<<<<<< Updated upstream
                 cmd_vel = Twist()
                 self.cmd_vel_publisher.publish(cmd_vel)  # Stop the robot when close to the waypoint
                 return reached_wp(True)
             print(cmd_vel)
-=======
-                # If near the goal, orient according to the target pose
-                if abs(error_yaw_to_orientation) > self.angular_tolerance:
-                    twist = Twist()
-                    twist.linear.x = 0
-                    twist.angular.z = proportional_yaw_to_orientation + self.ki_angular * self.integral_yaw_to_orientation + self.kd_angular * derivative_yaw_to_orientation
-                    self.cmd_vel_pub.publish(twist)
-                else:
-                    # Target pose achieved, stop the robot and return True
-                    twist = Twist()
-                    self.cmd_vel_pub.publish(twist)
-                    rospy.loginfo("Target pose achieved!")
-                    return True
-
->>>>>>> Stashed changes
-            self.rate.sleep()
-
 
         # #############################################
         # # Calculate P for yaw and position control
