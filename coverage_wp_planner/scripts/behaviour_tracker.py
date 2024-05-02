@@ -4,6 +4,7 @@ import logging
 logging.basicConfig(format='[%(filename)s:%(lineno)d] %(message)s', level=logging.INFO)
 import time
 import rospy
+import rospkg
 from geometry_msgs.msg import Pose, PoseArray, Point
 from visualization_msgs.msg import Marker
 
@@ -19,8 +20,17 @@ import os
 from scipy.spatial import ConvexHull
 from coverage_wp_planner.srv import *
 
+# Move Base Client
+import actionlib
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+
+# Manipulator Client
+from ur3e_moveit_config.srv import GoToManipGP, GoToManipJoints
+
 import networkx as nx
 
+rospack = rospkg.RosPack()
+data_path = rospack.get_path('object_spawner') +"/gazebo_resources/"
  
 def create_graph_perform_dfs(pose_df, comp_boat_df, arm_base_point, max_dist_node_idx):
     print(pose_df)
@@ -172,6 +182,50 @@ def check_point_in_hull(inp_points, hull, eps=0, print_eps=False):
         return np.all(np.asarray(x) @ A.T + b.T < eps, axis=1)
     return contained(inp_points)
 
+
+# Call the move base client for a goal pose 
+def call_movebase_service(goal_pose):
+
+    # Create an action client called "move_base" with action definition file "MoveBaseAction"
+    client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+ 
+    # Waits until the action server has started up and started listening for goals.
+    client.wait_for_server()
+
+    # Creates a new goal with the MoveBaseGoal constructor
+    goal = MoveBaseGoal()
+    goal.target_pose.header.frame_id = "map"
+    goal.target_pose.header.stamp = rospy.Time.now()
+    goal.target_pose.pose = goal_pose
+
+    # Sends the goal to the action server.
+    client.send_goal(goal)
+    wait = client.wait_for_result()
+
+    # Failure to reach server
+    if not wait:
+        rospy.logerr("Action server not available!")
+        rospy.signal_shutdown("Action server not available!")
+    else:
+    # Result of executing the action
+        return client.get_result() 
+    
+def call_manipulator_service(goal_pose):
+
+    # Wait for the manipulator service
+    rospy.wait_for_service('manip_gp_srv')
+    try:
+
+        # Push goal pose message
+        push_msg = rospy.ServiceProxy('manip_gp_srv', GoToManipGP)
+        response = push_msg(goal_pose)
+        return response
+
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
+
+
 class BehaviourTracker:
     """
         * Load the boat 3d csv
@@ -183,7 +237,6 @@ class BehaviourTracker:
     """
     def __init__(self):
         rospy.init_node('behaviour_tracker')
-        data_path = "/root/Scout_UR3E_Repo/src/object_spawner/gazebo_resources"
         # data_path = "/root/Scout_UR3E_Repo/src/object_spawner/gazebo_resources"
         self.boat_df = pd.read_csv(f"{data_path}/model_facets/boat.csv")
         self.mesh = get_mesh(f'{data_path}/models/boat/meshes/boat.dae')
@@ -233,6 +286,8 @@ class BehaviourTracker:
         # rospy.wait_for_service('wp_2_twist_srv')
         self.rate = rospy.Rate(0.1)  # 10 Hz
 
+
+
     def run(self):
         while not rospy.is_shutdown():
             # mb_unvisited_wp = self.boat_df.iloc[:1] #[self.boat_df["visited"] == False  & (self.boat_df["near_surface"] == True)]
@@ -269,6 +324,11 @@ class BehaviourTracker:
 
                     print([base_x, base_y], check_point_in_hull([[base_x, base_y]], self.boat_xy_hull, eps=0.2, print_eps=True))
                     if not check_point_in_hull([[base_x, base_y]], self.boat_xy_hull, eps=0.2, print_eps=True):
+                        
+                        # Call movebase service
+                        call_movebase_service(self.mobile_base_pose_array.poses[0])
+
+
                         unvisited_reachable_poses = self.boat_df[(self.boat_df["visited"] == False) & (boat_point_dist < 0.75*self.arm_reach)]
                         # print("unvisited_reachable_poses : ", len(unvisited_reachable_poses))
                         print(unvisited_reachable_poses)
@@ -284,6 +344,13 @@ class BehaviourTracker:
                             self.end_effector_pose_array = process_pose_array(self.boat_df.loc[unvisited_reachable_poses.index, :], #.iloc[node_idx:node_idx+1], 
                                                                             dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
                             self.pub_curr_ee_pose_array.publish(self.end_effector_pose_array)
+                            
+                            pose_to_visit = process_pose_array((self.boat_df.loc[node_idx:node_idx+1,:]), 
+                                                        dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
+                            
+                            # Call Manipulator service
+                            call_manipulator_service(pose_to_visit.poses[0])
+
                             self.boat_df.loc[node_idx, ["visited"]] = True
                             self.visited_end_effector_pose_array = process_pose_array(self.boat_df[self.boat_df["visited"] == True], 
                                                                                 dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
