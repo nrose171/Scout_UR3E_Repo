@@ -1,12 +1,19 @@
 <launch>
-  <!--<node pkg="coverage_wp_planner" type="behaviour_tracker.py" name="behaviour_tracker" output="screen">
+  <node pkg="coverage_wp_planner" type="behaviour_tracker.py" name="behaviour_tracker" output="screen">
     <remap from="/odom" to="/gazebo/link_states" />
-  </node>-->
-  <node pkg="coverage_wp_planner" type="wp2twist.py" name="wp2twist" output="screen">
-    <!-- <remap from="/waypoint" to="/planned_wps" /> -->
+  </node>
+    <!-- <node pkg="coverage_wp_planner" type="plotting_node.py" name="plotting_node" output="screen">
+  </node> -->
+  <!-- <node pkg="coverage_wp_planner" type="wp2twist_server.py" name="wp2twist_server" output="screen">
     <remap from="/odom" to="/gazebo/link_states" />
-    <!-- <remap from="/cmd_vel" to="/cmd_vel" /> -->
+  </node> -->
+  <!-- <node pkg="coverage_wp_planner" type="wp2twist_server.py" name="wp2twist_server" output="screen">
+  </node> -->
+  <!-- <node pkg="coverage_wp_planner" type="wp2twist.py" name="wp2twist" output="screen">
+    <remap from="/waypoint" to="/planned_wps" />
+    <remap from="/odom" to="/gazebo/link_states" />
+    <remap from="/cmd_vel" to="/cmd_vel" />
     <param name="linear_vel" value="0.5" />
     <param name="angular_vel" value="0.5" />
-  </node>
+  </node> -->
 </launch>

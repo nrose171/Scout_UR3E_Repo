@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  std_srvs
   geometry_msgs
   nav_msgs
   gazebo_msgs
@@ -61,7 +62,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   DIRECTORY srv
   FILES
-  AddTwoInts.srv
+#  AddTwoInts.srv
   GoToWP.srv
 )
 
@@ -170,8 +171,8 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 catkin_install_python(PROGRAMS  
-  scripts/add_two_ints_server.py 
-  scripts/add_two_ints_client.py
+#  scripts/add_two_ints_server.py 
+#  scripts/add_two_ints_client.py
   scripts/wp2twist_server.py
   scripts/wp2twist_client.py
   scripts/behaviour_tracker.py
