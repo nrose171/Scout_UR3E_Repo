@@ -1,0 +1,6 @@
+NavfnROS:
+  allow_unknown: True
+  default_tolerance: 0.1 # A tolerance on the goal point for the planner.
+  # planner_window_x: 10.0
+  # planner_window_y: 10.0
+  visualize_potential: False

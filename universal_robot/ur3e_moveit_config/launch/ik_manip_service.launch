@@ -1,4 +1,0 @@
-<launch>
-    <!-- UR3E Moveit Service -->
-    <node name="UR3E_ik_manip" pkg="ur3e_moveit_config" type="UR3E_ik_manip.py" />
-</launch>

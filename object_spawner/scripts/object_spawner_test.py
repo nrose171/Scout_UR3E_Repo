@@ -7,7 +7,7 @@ import geometry_msgs.msg as gm
 
 rospack = rospkg.RosPack()
 dir_path = rospack.get_path('object_spawner')
-gz_re_path = dir_path + "/gazebo_resources/models"
+gz_re_path = dir_path + "/gazebo_resources/"
 
 spawn_model_client = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # for i in range(10):
     #     spawn_model(path, name + str(i), pose)
 
-    boat_path = dir_path + "/models/boat/model.sdf"
+    boat_path = gz_re_path + "models/boat/model.sdf"
     boat_name = "boat2"
     boat_pose = gm.Pose(gm.Point(0, 0, 0), gm.Quaternion(0, 0, 0, 0))
     spawn_model(boat_path, boat_name, boat_pose)

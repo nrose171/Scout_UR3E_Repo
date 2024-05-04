@@ -4,7 +4,7 @@
 
   <!-- UR3E Moveit Planner -->
   <include file="$(find ur3e_moveit_config)/launch/moveit_planning_execution.launch">
-   <arg name="sim" value="true" />
+    <arg name="sim" value="true" />
   </include>
 
   <!-- UR3E Moveit Service -->
