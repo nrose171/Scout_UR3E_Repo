@@ -1,5 +1,5 @@
 Dependencies:
-[Go Into Sub Directories to see how to install dependencies of each]
+[Go Into Sub Directories to see how to install dependencies of each] \
 ROS Noetic \
 UGV_SIM \
 Scout_Gazebo \
