@@ -6,7 +6,7 @@
     <!-- Scout files -->
 
     <!-- initial pose -->
-    <arg name="x" default="0.0"/>
+    <arg name="x" default="-5.0"/>
     <arg name="y" default="0.0"/>
     <arg name="z" default="0.0"/>
     <arg name="yaw" default="0.0"/>
@@ -29,10 +29,24 @@
     <arg name="use_sim_time" default="true" />
     <arg name="gui" default="true" />
     <arg name="headless" default="false" />
-    <arg name="debug" default="true" />
+    <arg name="debug" default="false" />
 
     <arg name="urdf_extras" default="$(find scout_description)/urdf/empty.urdf"/>
 
+    <!-- <arg name="world_name" default="worlds/empty.world" doc="The '.world' file to load in Gazebo." /> -->
+    <arg name="world_name" default="$(find scout_ur3e)/worlds/scout_playpen.world"/>
+
+    <!-- Start Gazebo -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(arg world_name)"/>
+        <arg name="paused" value="$(arg paused)"/>
+        <!-- <arg name="use_sim_time" value="true"/> -->
+        <arg name="gui" value="$(arg gui)"/>
+        <arg name="headless" value="$(arg headless)"/>
+        <arg name="debug" value="$(arg debug)"/>
+    </include>
+
+    <!-- Load Model Description and Controllers -->
     <include file="$(find scout_description)/launch/scout_v2_ur3e_stock.launch">
         <arg name="robot_namespace" value="$(arg robot_namespace)" />
     </include>

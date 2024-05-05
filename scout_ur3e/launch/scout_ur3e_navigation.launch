@@ -6,7 +6,8 @@
   <include file="$(find scout_ur3e)/launch/scout_ur3e_empty_world.launch"/>
 
   <!-- Spawn Boat -->
-  <include file="$(find object_spawner)/launch/obj_spawner_test.launch"/>
+  <node name="object_spawner_node" pkg="scout_ur3e" type="spawn_boat.py" />
+  <!-- <include file="$(find object_spawner)/launch/boat_spawner.launch"/> -->
 
   <!-- SLAM -->
   <include file="$(find scout_ur3e)/launch/scout_ur3e_gmapping.launch"/>
