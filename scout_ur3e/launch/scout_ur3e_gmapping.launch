@@ -4,7 +4,7 @@
   <arg name="set_odom_frame" default="odom"/>
   <arg name="set_map_frame"  default="map"/>
 
-  <!-- Gmapping -->
+  <!-- SLAM Gmapping -->
   <node pkg="gmapping" type="slam_gmapping" name="scout_ur3e_slam_gmapping" output="screen">
     <param name="use_sim_time" value="true"/>
     <param name="base_frame" value="$(arg set_base_frame)"/>

@@ -119,6 +119,28 @@
       <origin xyz="${base_y_size-0.1} 0 ${base_z_size-0.09}" rpy="0 0 ${pi}"/>
     </joint>
 
+    <!-- Drilling end effector -->
+    <!-- <link name="drill_end_effector_link">
+        <visual>
+            <geometry>
+                <mesh filename="package://scout_description/meshes/poly_drill/drilling_end_effector.dae" />
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://scout_description/meshes/poly_drill/drilling_end_effector.dae" />
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+        </collision>
+    </link>
+
+    <joint name="drill_end_effector_joint" type="fixed">
+      <parent link="wrist_3_link"/>
+      <child link="drill_end_effector_link"/>
+      <axis xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 0.005" rpy="${pi} 0 0"/>
+    </joint> -->
 
     <!-- LIDAR -->
     <!-- <xacro:property name="M_PI" value="3.1415926535897931" />
@@ -138,10 +160,10 @@
                   iyy="0.000308429" iyz="0" izz="0.00034589"/>
       </inertial>
       <collision name="lidar_collision">
-        <origin xyz="0 0 0.03675" rpy="0 0 0" />
-        <geometry>
-          <cylinder radius="0.04350" length="0.07350"/>
-        </geometry>
+        <!-- <origin xyz="0 0 0.03675" rpy="0 0 0" /> -->
+        <!-- <geometry> -->
+          <!-- <cylinder radius="0.04350" length="0.07350"/> -->
+        <!-- </geometry> -->
       </collision>
       <visual name="lidar_visual">
         <origin xyz="0 0 0.0" rpy="0 0 0"/>
@@ -154,7 +176,7 @@
     <joint name="laser_joint" type="fixed">
       <parent link="scout_base_link"/>
       <child link="laser_frame"/>
-      <origin xyz="${base_y_size+0.05} 0 ${0.0}" rpy="0 0 0"/>
+      <origin xyz="${base_y_size+0.02} 0 ${0.0}" rpy="0 0 0"/>
     </joint>
 
     <!-- Add lidar plugin for scan topic -->

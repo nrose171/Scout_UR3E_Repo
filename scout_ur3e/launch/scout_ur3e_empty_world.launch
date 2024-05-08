@@ -14,15 +14,34 @@
     <arg name="scout_name" default="robot"/>
     <arg name="robot_namespace" default=""/>
 
-    <arg name="pi" default="0.00"/>
+    <arg name="pi" default="3.14"/>
+    <arg name="ninety_deg" default="1.57"/>
 
-    <arg name="robot_joint_states" default=
-    " -J $(arg scout_name)::shoulder_pan_joint 180.0 
-      -J $(arg scout_name)::shoulder_lift_joint $(arg pi)
-      -J $(arg scout_name)::elbow_joint $(arg pi)
-      -J $(arg scout_name)::wrist_1_joint $(arg pi)
-      -J $(arg scout_name)::wrist_2_joint $(arg pi)
-      -J $(arg scout_name)::wrist_3_joint $(arg pi)"/>
+    <!-- <arg name="robot_joint_states" default=
+    " -J $(arg scout_name)::shoulder_pan_joint 0.00
+      -J $(arg scout_name)::shoulder_lift_joint -3.14
+      -J $(arg scout_name)::elbow_joint 0.00
+      -J $(arg scout_name)::wrist_1_joint -3.14
+      -J $(arg scout_name)::wrist_2_joint -1.57
+      -J $(arg scout_name)::wrist_3_joint 0.00"/> -->
+
+      <!-- <arg name="robot_joint_states" default=
+    " -J $(arg scout_name)::shoulder_pan_joint -3.14
+      -J $(arg scout_name)::shoulder_lift_joint -1.57
+      -J $(arg scout_name)::elbow_joint 0.00
+      -J $(arg scout_name)::wrist_1_joint -1.57
+      -J $(arg scout_name)::wrist_2_joint 0.00
+      -J $(arg scout_name)::wrist_3_joint 1.57"/> -->
+
+
+      <arg name="robot_joint_states" default=
+    " -J $(arg scout_name)::shoulder_pan_joint 0.00
+      -J $(arg scout_name)::shoulder_lift_joint 0.00
+      -J $(arg scout_name)::elbow_joint 0.00
+      -J $(arg scout_name)::wrist_1_joint 0.00
+      -J $(arg scout_name)::wrist_2_joint 0.00
+      -J $(arg scout_name)::wrist_3_joint 0.00"/>
+
 
     <!-- these are the arguments you can pass this launch file, for example paused:=true -->
     <arg name="paused" default="true" />
