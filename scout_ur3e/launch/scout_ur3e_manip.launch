@@ -11,7 +11,7 @@
   </include>
 
   <!-- UR3E Moveit Service -->
-  <!-- <include file="$(find ur3e_moveit_config)/launch/ik_manip_service.launch"/> -->
+  <include file="$(find ur3e_moveit_config)/launch/ik_manip_service.launch"/>
 
   <!-- RVIZ -->
   <group if="$(arg Use_RVIZ)">
