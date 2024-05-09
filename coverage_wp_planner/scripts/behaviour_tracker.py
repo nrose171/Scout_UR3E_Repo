@@ -184,10 +184,11 @@ def check_point_in_hull(inp_points, hull, eps=0, print_eps=False):
 
 
 # Call the move base client for a goal pose 
+# REQUIRES only z and w of orientation to be set
 def call_movebase_service(goal_pose):
 
     # Create an action client called "move_base" with action definition file "MoveBaseAction"
-    client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+    client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
  
     # Waits until the action server has started up and started listening for goals.
     client.wait_for_server()
@@ -208,8 +209,9 @@ def call_movebase_service(goal_pose):
         rospy.signal_shutdown("Action server not available!")
     else:
     # Result of executing the action
-        return client.get_result() 
-    
+        return client.get_goal_status_text()
+
+# Expected input: Pose w.r.t. map coordinate frame
 def call_manipulator_service(goal_pose):
 
     # Wait for the manipulator service

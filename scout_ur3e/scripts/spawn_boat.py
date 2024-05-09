@@ -31,5 +31,5 @@ if __name__ == "__main__":
 
     boat_path = gz_re_path + "models/boat/model.sdf"
     boat_name = "boat"
-    boat_pose = gm.Pose(gm.Point(0, 0, -0.1), gm.Quaternion(0, 0, 0, 0))
+    boat_pose = gm.Pose(gm.Point(0, 0, 0), gm.Quaternion(0, 0, 0, 0))
     spawn_model(boat_path, boat_name, boat_pose)

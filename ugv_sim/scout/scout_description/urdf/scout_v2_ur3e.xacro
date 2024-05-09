@@ -159,12 +159,12 @@
         <inertia ixx="0.000308429" ixy="0" ixz="0"
                   iyy="0.000308429" iyz="0" izz="0.00034589"/>
       </inertial>
-      <collision name="lidar_collision">
-        <!-- <origin xyz="0 0 0.03675" rpy="0 0 0" /> -->
-        <!-- <geometry> -->
-          <!-- <cylinder radius="0.04350" length="0.07350"/> -->
-        <!-- </geometry> -->
-      </collision>
+      <!-- <collision name="lidar_collision">
+        <origin xyz="0 0 0.03675" rpy="0 0 0" />
+        <geometry>
+          <cylinder radius="0.04350" length="0.07350"/>
+        </geometry>
+      </collision> -->
       <visual name="lidar_visual">
         <origin xyz="0 0 0.0" rpy="0 0 0"/>
         <geometry>
@@ -176,7 +176,7 @@
     <joint name="laser_joint" type="fixed">
       <parent link="scout_base_link"/>
       <child link="laser_frame"/>
-      <origin xyz="${base_y_size+0.02} 0 ${0.0}" rpy="0 0 0"/>
+      <origin xyz="${base_y_size+0.02} 0 ${0.1}" rpy="0 0 0"/>
     </joint>
 
     <!-- Add lidar plugin for scan topic -->
@@ -209,6 +209,21 @@
         </sensor>
     </gazebo>
 
+    <!-- NOT WORKING: Gazebo ODOM plugin -->
+    <!-- <gazebo>
+        <plugin name="p3e_odometry" filename="libgazebo_ros_p3d.so">
+            <frameName>map</frameName>
+            <alwaysOn>true</alwaysOn>
+            <robotNamespace></robotNamespace>
+            <bodyName>scout_base_link</bodyName>
+            <topicName>odom</topicName>
+            <updateRate>100.0</updateRate>
+            <gaussianNoise>0.0</gaussianNoise>
+            <xyzOffsets>0 0 0</xyzOffsets>
+            <rpyOffsets>0 0 0</rpyOffsets>
+        </plugin>
+    </gazebo> -->
+
     <!-- Add Skid steer controller for odom topic -->
     <gazebo>
         <plugin name="skid_steer_drive_controller" filename="libgazebo_ros_skid_steer_drive.so">
@@ -222,9 +237,12 @@
             <robotBaseFrame>scout_base_link</robotBaseFrame>
             <commandTopic>cmd_vel</commandTopic>
             <broadcastTF>true</broadcastTF>
-            <odometrySource>world</odometrySource>
+            <!-- <odometrySource>map</odometrySource> -->
             <odometryTopic>odom</odometryTopic>
             <odometryFrame>odom</odometryFrame>
+            <covariance_x>0.0</covariance_x>
+            <covariance_y>0.0</covariance_y>
+            <covariance_yaw>0.0</covariance_yaw>
         </plugin>
     </gazebo>
 

@@ -60,6 +60,8 @@ from moveit_commander.conversions import pose_to_list
 import ur3e_moveit_config
 from ur3e_moveit_config.srv import *
 
+use_map = True
+
 try:
     from math import pi, tau, dist, fabs, cos
 except:  # For Python 2 compatibility
@@ -70,16 +72,17 @@ except:  # For Python 2 compatibility
     def dist(p, q):
         return sqrt(sum((p_i - q_i) ** 2.0 for p_i, q_i in zip(p, q)))
 
+
+"""
+Convenience method for testing if the values in two lists are within a tolerance of each other.
+For Pose and PoseStamped inputs, the angle between the two quaternions is compared (the angle
+between the identical orientations q and -q is calculated correctly).
+@param: goal       A list of floats, a Pose or a PoseStamped
+@param: actual     A list of floats, a Pose or a PoseStamped
+@param: tolerance  A float
+@returns: bool
+"""
 def all_close(goal, actual, tolerance):
-    """
-    Convenience method for testing if the values in two lists are within a tolerance of each other.
-    For Pose and PoseStamped inputs, the angle between the two quaternions is compared (the angle
-    between the identical orientations q and -q is calculated correctly).
-    @param: goal       A list of floats, a Pose or a PoseStamped
-    @param: actual     A list of floats, a Pose or a PoseStamped
-    @param: tolerance  A float
-    @returns: bool
-    """
     if type(goal) is list:
         for index in range(len(goal)):
             if abs(actual[index] - goal[index]) > tolerance:
@@ -103,6 +106,8 @@ class MoveGroupCommander(object):
     
     def __init__(self):
         super(MoveGroupCommander, self).__init__()
+
+        global use_map
 
         ## BEGIN_SUB_TUTORIAL setup
         ##
@@ -159,7 +164,9 @@ class MoveGroupCommander(object):
 
         move_group.set_planner_id(planner)
         # move_group.set_planning_pipeline_id(plannerPipeline)
-        # move_group.set_pose_reference_frame("base_link")
+
+        if use_map is True:
+            move_group.set_pose_reference_frame("map")
         move_group.allow_replanning(True)        
         move_group.set_goal_tolerance(0.01)
         move_group.set_num_planning_attempts(planning_attempts)
@@ -272,12 +279,21 @@ def start_manip_gp(gp):
     
     
 def main():
+    global use_map
+
     rospy.init_node('scout_manip')
     args = sys.argv
-    if len(args) > 1 and args[1] == "joint":
+
+    if len(args) > 2 and args[2] == "joint":
         print("Calling Joints")
         start_JointState_server()
     else:
+        if args[1] == "true":
+            use_map = True
+            print("CALLING TRUE")
+        elif args[1] == "false":
+            use_map = False
+            print("CALLING FALSE")
         print("Calling GP")
         start_GoalPoint_server()
 

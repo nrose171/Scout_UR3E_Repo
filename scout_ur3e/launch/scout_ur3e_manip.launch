@@ -1,6 +1,7 @@
 <launch>
 
   <arg name="Use_RVIZ"   default="false"/>
+  <arg name="Use_Map_CF" default="true"/>
 
   <!-- Disable for final tests -->
   <!-- <include file="$(find scout_ur3e)/launch/scout_ur3e_empty_world.launch"/> -->
@@ -11,7 +12,7 @@
   </include>
 
   <!-- UR3E Moveit Service -->
-  <include file="$(find ur3e_moveit_config)/launch/ik_manip_service.launch"/>
+  <node name="UR3E_ik_manip_srv" pkg="ur3e_moveit_config" type="UR3E_ik_manip.py" args="$(arg Use_Map_CF)"/>
 
   <!-- RVIZ -->
   <group if="$(arg Use_RVIZ)">
