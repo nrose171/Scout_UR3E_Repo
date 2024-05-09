@@ -11,7 +11,7 @@ from visualization_msgs.msg import Marker
 from std_msgs.msg import Header
 from nav_msgs.msg import Odometry
 from gazebo_msgs.srv import GetModelState, GetModelStateRequest
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
+# from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -30,10 +30,10 @@ from ur3e_moveit_config.srv import GoToManipGP, GoToManipJoints
 import networkx as nx
 
 rospack = rospkg.RosPack()
-data_path = rospack.get_path('object_spawner') +"/gazebo_resources/"
+data_path = rospack.get_path('scout_ur3e') +"/gazebo_resources/"
  
-def create_graph_perform_dfs(pose_df, comp_boat_df, arm_base_point, max_dist_node_idx):
-    print(pose_df)
+def create_graph_perform_dfs(pose_df, comp_boat_df, arm_base_point, max_dist_node_idx, plotting=False):
+    # print(pose_df)
     pose_df_idx = pose_df.index
     G = nx.Graph()
     # Add nodes to the graph
@@ -41,47 +41,43 @@ def create_graph_perform_dfs(pose_df, comp_boat_df, arm_base_point, max_dist_nod
         # print(index, row)
         G.add_node(index, pos=(row['x'], row['y']))
 
-    
-
     # Add edges between adjacent points
     for i in range(len(pose_df)):
         for j in range(i+1, len(pose_df)):
-            if (abs(pose_df.iloc[i]['x'] - pose_df.iloc[j]['x']) <= 1 and \
-                abs(pose_df.iloc[i]['y'] - pose_df.iloc[j]['y']) <= 1 and \
-                abs(pose_df.iloc[i]['z'] - pose_df.iloc[j]['z']) <= 1):
-                print(pose_df_idx[i], pose_df_idx[j])
+            if (abs(pose_df.iloc[i]['x'] - pose_df.iloc[j]['x']) <= 2 and \
+                abs(pose_df.iloc[i]['y'] - pose_df.iloc[j]['y']) <= 2 and \
+                abs(pose_df.iloc[i]['z'] - pose_df.iloc[j]['z']) <= 2):
+                # print(pose_df_idx[i], pose_df_idx[j])
                 G.add_edge(pose_df_idx[i], pose_df_idx[j])
 
     dfs_node_order = list(nx.dfs_preorder_nodes(G, source=max_dist_node_idx))
-    print(dfs_node_order)
-    # print(pose_df['x'][dfs_node_order])
-    # print(pose_df['y'][dfs_node_order])
+    if plotting == True:
+        # print(dfs_node_order)
+        # print(pose_df['x'][dfs_node_order])
+        # print(pose_df['y'][dfs_node_order])
 
-    fig = plt.figure()
-    ax_3d = fig.add_subplot(111, projection='3d')
-    ax_3d.scatter(comp_boat_df['x'].values, 
-                  comp_boat_df['y'].values, 
-                  comp_boat_df['z'].values, marker='o', color="r")
-    ax_3d.plot(pose_df['x'][dfs_node_order].values, 
-                  pose_df['y'][dfs_node_order].values, 
-                  pose_df['z'][dfs_node_order].values, marker='^', color="b")
-    ax_3d.scatter(arm_base_point[0], arm_base_point[1], arm_base_point[2], marker='o', color="g")
+        fig = plt.figure()
+        ax_3d = fig.add_subplot(111, projection='3d')
+        ax_3d.scatter(comp_boat_df['x'].values, 
+                    comp_boat_df['y'].values, 
+                    comp_boat_df['z'].values, marker='o', color="r")
+        ax_3d.plot(pose_df['x'][dfs_node_order].values, 
+                    pose_df['y'][dfs_node_order].values, 
+                    pose_df['z'][dfs_node_order].values, marker='^', color="b")
+        ax_3d.scatter(arm_base_point[0], arm_base_point[1], arm_base_point[2], marker='o', color="g")
 
-    ax_3d.set_xlim3d(1, 6)
-    ax_3d.set_ylim3d(-1, 1)
-    ax_3d.set_zlim3d(0, 1)
+        ax_3d.set_xlim3d(1, 6)
+        ax_3d.set_ylim3d(-1, 1)
+        ax_3d.set_zlim3d(0, 1)
 
-    plt.pause(5)
-    plt.show(block=False)
+        plt.pause(2)
+        plt.show(block=False)
 
     # Perform DFS on the graph
     print("Depth-First Search (DFS) traversal:")
     return dfs_node_order
     
-
-
-
-def process_pose_array(poses, dist, horizontal=False, arm_base_height=0.25,num_skip=1):   # Distance to shift the points (in meters)
+def process_pose_array(poses, dist, horizontal=False, num_skip=1):   # Distance to shift the points (in meters)
     processed_pose_arr = PoseArray()
     processed_pose_arr.header.frame_id = 'map'
     processed_pose_arr.header.stamp = rospy.Time.now()
@@ -108,7 +104,7 @@ def process_pose_array(poses, dist, horizontal=False, arm_base_height=0.25,num_s
         shifted_point = poses.iloc[i][["x", "y", "z"]].values + dist * direction
         # direction = t3d.mat2quat(rot_matrix[:, 0].T)
 
-                # Multiply the rotation matrix by the flip matrix
+        # Multiply the rotation matrix by the flip matrix
         flipped_matrix = np.dot(rot_matrix, flip_matrix)
 
         # Convert the flipped rotation matrix back to a quaternion
@@ -116,8 +112,8 @@ def process_pose_array(poses, dist, horizontal=False, arm_base_height=0.25,num_s
         flipped_quat /= np.linalg.norm(flipped_quat)
 
         if horizontal:
-            shifted_point[2] = arm_base_height
-            flipped_quat = quat_horiz_parallel_to_surface(flipped_quat)
+            flipped_quat = quat_horiz_coplanar_facet_normal(flipped_quat)
+            shifted_point[2] = 0
 
         pose = Pose()
         pose.position.x = shifted_point[0]
@@ -148,13 +144,15 @@ def quaternion_from_matrix(matrix):
 
     return np.array([q1, q2, q3, q0])
 
-def quat_horiz_parallel_to_surface(quaternion):
-    qx, qy, qz = quaternion[0], quaternion[1], quaternion[2]
-    z_axis = np.array([0, 0, 1])
-    perpendicular_vector = np.cross([qx, qy, qz], z_axis)
-    perpendicular_vector /= np.linalg.norm(perpendicular_vector)
-    perpendicular_quaternion = np.append(-1 * perpendicular_vector, 0)
-    return perpendicular_quaternion
+def quat_horiz_coplanar_facet_normal(quaternion):
+    qx, qy, qz, qw = quaternion[0], quaternion[1], quaternion[2], quaternion[2]
+    # z_axis = np.array([0, 0, 1])
+    # horiz_quaternion = np.cross(z_axis, np.cross([qx, qy, qz], z_axis))
+    # horiz_quaternion = np.hstack([horiz_quaternion, np.array([0])])
+    yaw = np.arctan2(qy, qx)
+    horiz_quaternion = np.array([0, 0, np.sin(yaw/2), np.cos(yaw/2)])
+    horiz_quaternion /= np.linalg.norm(horiz_quaternion)
+    return horiz_quaternion
 
 def get_mesh(filename):
     mesh = Marker()
@@ -177,8 +175,8 @@ def check_point_in_hull(inp_points, hull, eps=0, print_eps=False):
     def contained(x): 
         if print_eps: 
             thresh_eps = np.asarray(x) @ A.T + b.T
-            print([np.min(thresh_eps), np.max(thresh_eps)])
-            print(np.all(np.asarray(x) @ A.T + b.T < eps, axis=1))
+            # print([np.min(thresh_eps), np.max(thresh_eps)])
+            # print(np.all(np.asarray(x) @ A.T + b.T < eps, axis=1))
         return np.all(np.asarray(x) @ A.T + b.T < eps, axis=1)
     return contained(inp_points)
 
@@ -191,7 +189,9 @@ def call_movebase_service(goal_pose):
     client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
  
     # Waits until the action server has started up and started listening for goals.
+    print("Client created. Going to wait for it to get ready..")
     client.wait_for_server()
+    print("Server ready!")
 
     # Creates a new goal with the MoveBaseGoal constructor
     goal = MoveBaseGoal()
@@ -201,7 +201,9 @@ def call_movebase_service(goal_pose):
 
     # Sends the goal to the action server.
     client.send_goal(goal)
+    print(f"Sent the goal: {goal}")    
     wait = client.wait_for_result()
+    print(wait)
 
     # Failure to reach server
     if not wait:
@@ -283,12 +285,10 @@ class BehaviourTracker:
             rospy.loginfo("There are no points in the given boat.csv")
         
         self.arm_reach = 1
-        self.mb_arm_base_height = 0.25
+        self.mb_arm_base_height = 0.05
 
         # rospy.wait_for_service('wp_2_twist_srv')
         self.rate = rospy.Rate(0.1)  # 10 Hz
-
-
 
     def run(self):
         while not rospy.is_shutdown():
@@ -308,10 +308,10 @@ class BehaviourTracker:
                 try:
                     # rospy.loginfo(mb_unvisited_wp)
                     if len(mb_unvisited_wp) == 0: break
-                    mb_unvisited_wp["z"] += self.mb_arm_base_height
-                    self.mobile_base_pose_array = process_pose_array(mb_unvisited_wp, dist = 0.35*self.arm_reach, horizontal=True, arm_base_height=self.mb_arm_base_height)
+                    # mb_unvisited_wp["z"] += self.mb_arm_base_height
+                    self.mobile_base_pose_array = process_pose_array(mb_unvisited_wp, dist = 0.5*self.arm_reach, horizontal=True)
                     base_position = self.mobile_base_pose_array.poses[0].position
-                    base_x, base_y, base_z = base_position.x, base_position.y, base_position.z
+                    base_x, base_y, base_z = base_position.x, base_position.y, self.mb_arm_base_height
                     base_point = np.array([base_x, base_y, base_z]).T
                     boat_point_dist = self.boat_df[["x", "y", "z"]][(self.boat_df["visited"] == False)].sub(base_point, axis=1).pow(2).sum(axis=1).pow(.5)
                     # boat_point_dist = self.boat_df[["x", "y", "z"]][(self.boat_df["visited"] == False)].sub(base_point, axis=1).pow(2).sum(axis=1).pow(.5)
@@ -324,21 +324,27 @@ class BehaviourTracker:
                     # print(check_point_in_hull([[self.boat_center_x - self.boat_length/2, self.boat_center_y + self.boat_width/2]], self.boat_xy_hull, eps=0.2, print_eps=True))
                     # print(check_point_in_hull([[self.boat_center_x + self.boat_length/2, self.boat_center_y - self.boat_width/2]], self.boat_xy_hull, eps=0.2, print_eps=True))
 
-                    print([base_x, base_y], check_point_in_hull([[base_x, base_y]], self.boat_xy_hull, eps=0.2, print_eps=True))
+                    # print([base_x, base_y], check_point_in_hull([[base_x, base_y]], self.boat_xy_hull, eps=0.2, print_eps=True))
                     if not check_point_in_hull([[base_x, base_y]], self.boat_xy_hull, eps=0.2, print_eps=True):
                         
-                        # Call movebase service
+                        # # Call movebase service
+                        print(self.mobile_base_pose_array.poses[0])
+                        self.pub_mb_pose_array.publish(self.mobile_base_pose_array)
                         call_movebase_service(self.mobile_base_pose_array.poses[0])
 
-
-                        unvisited_reachable_poses = self.boat_df[(self.boat_df["visited"] == False) & (boat_point_dist < 0.75*self.arm_reach)]
+                        unvisited_reachable_poses = self.boat_df.loc[(self.boat_df["visited"] == False) & (boat_point_dist < 0.75*self.arm_reach), :]
                         # print("unvisited_reachable_poses : ", len(unvisited_reachable_poses))
-                        print(unvisited_reachable_poses)
+                        # print(unvisited_reachable_poses)
                         # unvisited_reachable_poses = all_reachable_poses[all_reachable_poses["visited"] == False]
+                        if len(boat_point_dist[unvisited_reachable_poses.index]) == 0: break
                         farthest_point_idx = boat_point_dist[unvisited_reachable_poses.index].idxmax()
                         
-                        pose_visit_order = create_graph_perform_dfs(self.boat_df.loc[unvisited_reachable_poses.index, :], self.boat_df, base_point, farthest_point_idx)
+                        pose_visit_order = create_graph_perform_dfs(self.boat_df.loc[unvisited_reachable_poses.index, :], self.boat_df, base_point, farthest_point_idx, plotting=False)
                         for node_idx in pose_visit_order:
+                            print(node_idx, len(self.boat_df))
+                            if node_idx >= len(self.boat_df):
+                                print(f"Skipping node {node_idx}")
+                                continue
                             self.boat_vis_pub.publish(self.boat_facet_pose_array)
                             self.mesh_pub.publish(self.mesh)
                             self.pub_mb_pose_array.publish(self.mobile_base_pose_array)
@@ -347,11 +353,12 @@ class BehaviourTracker:
                                                                             dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
                             self.pub_curr_ee_pose_array.publish(self.end_effector_pose_array)
                             
-                            pose_to_visit = process_pose_array((self.boat_df.loc[node_idx:node_idx+1,:]), 
+                            pose_to_visit = process_pose_array((self.boat_df.loc[node_idx:((node_idx+1)%len(self.boat_df)),:]), 
                                                         dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
                             
-                            # Call Manipulator service
-                            call_manipulator_service(pose_to_visit.poses[0])
+                            if len(pose_to_visit.poses) > 0:
+                                # Call Manipulator service
+                                call_manipulator_service(pose_to_visit.poses[0])
 
                             self.boat_df.loc[node_idx, ["visited"]] = True
                             self.visited_end_effector_pose_array = process_pose_array(self.boat_df[self.boat_df["visited"] == True], 
@@ -359,13 +366,8 @@ class BehaviourTracker:
                             self.pub_ee_pose_array.publish(self.visited_end_effector_pose_array)
                             print(" ", end="")
                         
-                    
-                    # rospy.loginfo(boat_point_dist.idxmax())
-
-                    # mb_unvisited_wp = self.boat_df.iloc[boat_point_dist.sample(1).index]
-                    # nearest_surface_point_idx = boat_point_dist[self.boat_df[(self.boat_df["near_surface"]==True)&(self.boat_df["visited"] == False)].index].idxmin()
-                    # mb_unvisited_wp = self.boat_df.iloc[farthest_visited_point_idx:farthest_visited_point_idx+1]
-                    # boat_hull_point_dist = self.boat_hull_vertices.sub(farthest_visited_point_idx, axis=1).pow(2).sum(axis=1).pow(.5)
+                        if node_idx >= len(self.boat_df):
+                            break
 
                     self.next_wp += 3
 
@@ -386,7 +388,7 @@ class BehaviourTracker:
             self.boat_vis_pub.publish(self.boat_facet_pose_array)
             self.mesh_pub.publish(self.mesh)
             self.pub_ee_pose_array.publish(self.visited_end_effector_pose_array)
-
+            
     def plot_convex_hull(self):
         # Create a Marker message
         marker = Marker()
