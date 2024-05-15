@@ -1,5 +1,6 @@
 <launch>
-        <arg name="rviz_file" default="$(find scout_ur3e)/rviz/navigation.rviz"/>
+        <!-- <arg name="rviz_file" default="$(find scout_ur3e)/rviz/navigation.rviz"/> -->
+        <arg name="rviz_file" default="$(find scout_ur3e)/rviz/project.rviz"/>
 
         <!-- Loading rviz files -->
         <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rviz_file)"/>

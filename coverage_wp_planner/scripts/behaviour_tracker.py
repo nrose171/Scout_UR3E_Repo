@@ -309,7 +309,7 @@ class BehaviourTracker:
                     # rospy.loginfo(mb_unvisited_wp)
                     if len(mb_unvisited_wp) == 0: break
                     # mb_unvisited_wp["z"] += self.mb_arm_base_height
-                    self.mobile_base_pose_array = process_pose_array(mb_unvisited_wp, dist = 0.5*self.arm_reach, horizontal=True)
+                    self.mobile_base_pose_array = process_pose_array(mb_unvisited_wp, dist = 0.75*self.arm_reach, horizontal=True)
                     base_position = self.mobile_base_pose_array.poses[0].position
                     base_x, base_y, base_z = base_position.x, base_position.y, self.mb_arm_base_height
                     base_point = np.array([base_x, base_y, base_z]).T
@@ -356,9 +356,9 @@ class BehaviourTracker:
                             pose_to_visit = process_pose_array((self.boat_df.loc[node_idx:((node_idx+1)%len(self.boat_df)),:]), 
                                                         dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
                             
-                            if len(pose_to_visit.poses) > 0:
+                            # if len(pose_to_visit.poses) > 0:
                                 # Call Manipulator service
-                                call_manipulator_service(pose_to_visit.poses[0])
+                                # call_manipulator_service(pose_to_visit.poses[0])
 
                             self.boat_df.loc[node_idx, ["visited"]] = True
                             self.visited_end_effector_pose_array = process_pose_array(self.boat_df[self.boat_df["visited"] == True], 

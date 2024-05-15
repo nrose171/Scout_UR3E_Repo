@@ -179,6 +179,55 @@
       <origin xyz="${base_y_size+0.02} 0 ${0.1}" rpy="0 0 0"/>
     </joint>
 
+
+
+    <!-- <gazebo reference="laser_frame">
+        <sensor type="depth" name="l515">
+          <updateRate>10.0</updateRate> #30.0
+          <always_on>true</always_on>
+          <visualize>true</visualize>
+          <camera>
+            <updateRate>0.0</updateRate> #Keep this zero, update_rate in the parent sensor tag controls the frame rate.
+            <horizontal_fov>${70.0*pi/180}</horizontal_fov>
+            <image>
+              <width>1024</width>
+              <height>768</height>
+              <format>R8G8B8</format>
+            </image>
+            <depth_camera>
+            </depth_camera>
+            <clip>
+              <near>0.2</near>
+              <far>200</far>
+            </clip>
+          </camera>
+          <plugin name="camera_controller" filename="libgazebo_ros_openni_kinect.so">
+            <robotNamespace>$(arg robot_namespace)</robotNamespace>
+            <alwaysOn>true</alwaysOn>
+              <updateRate>0.0</updateRate> #Keep this zero, update_rate in the parent sensor tag controls the frame rate.
+              <cameraName>l515</cameraName>
+              <frameName>laser_frame</frameName>
+            <imageTopicName>color/image_raw</imageTopicName>
+            <depthImageTopicName>aligned_depth_to_color/image_raw</depthImageTopicName>
+            <depthImageCameraInfoTopicName>aligned_depth_to_color/camera_info</depthImageCameraInfoTopicName>
+            <pointCloudTopicName>depth/color/points</pointCloudTopicName>
+            <cameraInfoTopicName>color/camera_info</cameraInfoTopicName>
+            <pointCloudCutoff>5.0</pointCloudCutoff>
+            <pointCloudCutoffMax>500.0</pointCloudCutoffMax> #9.0
+              <hackBaseline>0.07</hackBaseline> #0.07
+              <distortionK1>0.0</distortionK1>
+              <distortionK2>0.0</distortionK2>
+              <distortionK3>0.0</distortionK3>
+              <distortionT1>0.0</distortionT1>
+              <distortionT2>0.0</distortionT2>
+            <CxPrime>0.0</CxPrime>
+            <Cx>0.0</Cx>
+            <Cy>0.0</Cy>
+            <focalLength>0.0</focalLength>
+          </plugin>
+        </sensor>
+      </gazebo> -->
+
     <!-- Add lidar plugin for scan topic -->
     <gazebo reference="laser_frame">
         <material>Gazebo/Red</material>
