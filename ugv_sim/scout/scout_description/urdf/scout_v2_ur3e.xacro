@@ -247,7 +247,7 @@
                 </scan>
                 <range>
                     <resolution>0.1</resolution>
-                    <min>0.3</min>
+                    <min>0.5</min>
                     <max>100</max>
                 </range>
             </ray>

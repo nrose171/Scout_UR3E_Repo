@@ -76,18 +76,24 @@ def create_graph_perform_dfs(pose_df, comp_boat_df, arm_base_point, max_dist_nod
     # Perform DFS on the graph
     print("Depth-First Search (DFS) traversal:")
     return dfs_node_order
-    
-def process_pose_array(poses, dist, horizontal=False, num_skip=1):   # Distance to shift the points (in meters)
-    processed_pose_arr = PoseArray()
-    processed_pose_arr.header.frame_id = 'map'
-    processed_pose_arr.header.stamp = rospy.Time.now()
 
+def flip_rot_matrix(rot_matrix):
     flip_matrix = np.array([
         [-1, 0, 0],
         [0, 1, 0],
         [0, 0, -1]
     ])
+    return np.dot(rot_matrix, flip_matrix)
 
+def compose_pose_array(poses):
+    processed_pose_arr = PoseArray()
+    processed_pose_arr.header.frame_id = 'map'
+    processed_pose_arr.header.stamp = rospy.Time.now()
+    processed_pose_arr.poses = poses
+    return processed_pose_arr
+
+def process_pose_array(poses, dist, horizontal=False, num_skip=1):   # Distance to shift the points (in meters)
+    arr_of_poses = []
     for i in range(0, len(poses), num_skip):
         # Convert quaternion to rotation matrix
         q = poses.iloc[i][["qx", "qy", "qz", "qw"]].values
@@ -105,7 +111,7 @@ def process_pose_array(poses, dist, horizontal=False, num_skip=1):   # Distance 
         # direction = t3d.mat2quat(rot_matrix[:, 0].T)
 
         # Multiply the rotation matrix by the flip matrix
-        flipped_matrix = np.dot(rot_matrix, flip_matrix)
+        flipped_matrix = flip_rot_matrix(rot_matrix)
 
         # Convert the flipped rotation matrix back to a quaternion
         flipped_quat = quaternion_from_matrix(flipped_matrix)
@@ -123,7 +129,10 @@ def process_pose_array(poses, dist, horizontal=False, num_skip=1):   # Distance 
         pose.orientation.y = flipped_quat[1]
         pose.orientation.z = flipped_quat[2]
         pose.orientation.w = flipped_quat[3]
-        processed_pose_arr.poses.append(pose)
+
+        arr_of_poses.append(pose)
+
+    processed_pose_arr = compose_pose_array(arr_of_poses)
 
     return processed_pose_arr
 
@@ -249,6 +258,12 @@ class BehaviourTracker:
         self.pub_curr_ee_pose_array = rospy.Publisher('/curr_ee_poses', PoseArray, queue_size=1)
         self.pub_ee_pose_array = rospy.Publisher('/ee_poses', PoseArray, queue_size=1)
         self.pub_mb_pose_array = rospy.Publisher('/mb_poses', PoseArray, queue_size=1)
+        self.pub_successful_ee_poses = rospy.Publisher('/ee_poses_success', PoseArray, queue_size=1)
+        self.pub_failed_ee_poses = rospy.Publisher('/ee_posses_failed', PoseArray, queue_size=1)
+
+        # Successful and failed pose arrays
+        self.successful_poses = []
+        self.failed_poses = []
 
         # self.ani = FuncAnimation(self.vis.fig, self.vis.update_plot, init_func=self.vis.plot_init)
         # boat_df["x"] += 5
@@ -356,9 +371,18 @@ class BehaviourTracker:
                             pose_to_visit = process_pose_array((self.boat_df.loc[node_idx:((node_idx+1)%len(self.boat_df)),:]), 
                                                         dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
                             
-                            # if len(pose_to_visit.poses) > 0:
+                            if len(pose_to_visit.poses) > 0:
                                 # Call Manipulator service
-                                # call_manipulator_service(pose_to_visit.poses[0])
+                                result = call_manipulator_service(pose_to_visit.poses[0])
+                                print("RESULT: ")
+                                print(result)
+                                if result.reachedGP == True:
+                                    self.successful_poses.append(pose_to_visit.poses[0])
+                                else:
+                                    self.failed_poses.append(pose_to_visit.poses[0])
+
+                            self.pub_successful_ee_poses.publish(compose_pose_array(self.successful_poses))
+                            self.pub_failed_ee_poses.publish(compose_pose_array(self.failed_poses))
 
                             self.boat_df.loc[node_idx, ["visited"]] = True
                             self.visited_end_effector_pose_array = process_pose_array(self.boat_df[self.boat_df["visited"] == True], 
