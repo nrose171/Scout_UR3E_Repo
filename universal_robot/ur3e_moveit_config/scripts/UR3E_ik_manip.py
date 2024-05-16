@@ -167,7 +167,12 @@ class MoveGroupCommander(object):
 
         if use_map is True:
             move_group.set_pose_reference_frame("map")
-        move_group.allow_replanning(True)        
+
+        move_group.set_end_effector_link("wrist_3_link")
+        # move_group.allow_looking(True)
+        move_group.allow_replanning(True)
+        move_group.clear_path_constraints()
+        move_group.clear_trajectory_constraints()
         move_group.set_goal_tolerance(0.01)
         move_group.set_num_planning_attempts(planning_attempts)
         move_group.set_planning_time(planning_time)
@@ -203,21 +208,22 @@ class MoveGroupCommander(object):
         # joint_goal[6] = 0
 
         # Execute Joint States
-        self.move_group.go(joint_goal, wait=True)
+        success = self.move_group.go(joint_goal, wait=True)
 
         # Stop Movement
         self.move_group.stop()
 
         # Close all controller Tasks
         current_joints = self.move_group.get_current_joint_values()
+        all_close(joint_goal, current_joints, 0.01)
 
         # Return true if within tolerance
-        return all_close(joint_goal, current_joints, 0.01)
+        return success
 
     def go_to_pose_goal(self, gp):
         # Set goal Pose
         pose_goal = gp.pose
-        self.move_group.set_pose_target(pose_goal)
+        self.move_group.set_pose_target(pose_goal, "wrist_3_link")
 
         ## Now, we call the planner to compute the plan and execute it.
         # `go()` returns a boolean indicating whether the planning and execution was successful.
@@ -232,8 +238,47 @@ class MoveGroupCommander(object):
         # Close all controller tasks
         current_pose = self.move_group.get_current_pose().pose
         all_close(pose_goal, current_pose, 0.01)
-
         return success
+    
+    def attempt_cartesian_path(self, gp):
+        ## Cartesian Paths
+        ## ^^^^^^^^^^^^^^^
+        ## You can plan a Cartesian path directly by specifying a list of waypoints
+        ## for the end-effector to go through. If executing  interactively in a
+        ## Python shell, set scale = 1.0.
+        ##
+        pose_goal = gp.pose
+        waypoints = []
+
+        wpose = self.move_group.get_current_pose().pose
+        waypoints.append(copy.deepcopy(wpose))
+        waypoints.append(copy.deepcopy(gp))
+
+        # We want the Cartesian path to be interpolated at a resolution of 1 cm
+        # which is why we will specify 0.01 as the eef_step in Cartesian
+        # translation.  We will disable the jump threshold by setting it to 0.0,
+        # ignoring the check for infeasible jumps in joint space, which is sufficient
+        # for this tutorial.
+        (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, 0.01, 0.0)  # waypoints to follow  # eef_step  # jump_threshold
+        
+        ## Executing a Plan
+        ## ^^^^^^^^^^^^^^^^
+        ## Use execute if you would like the robot to follow
+        ## the plan that has already been computed:
+        self.move_group.execute(plan, wait=True)
+
+        # Calling `stop()` ensures that there is no residual movement
+        self.move_group.stop()
+
+        # Clear target goal pose
+        self.move_group.clear_pose_targets()
+
+        # Close all controller tasks
+        current_pose = self.move_group.get_current_pose().pose
+        
+        return all_close(pose_goal, current_pose, 0.01)
+
+        ## END_SUB_TUTORIAL`
 
 def start_JointState_server():
     s = rospy.Service('manip_joint_srv', GoToManipJoints, start_manip_joints)
@@ -261,14 +306,23 @@ def start_GoalPoint_server():
     print("Waiting for Manip Goal Point")
     rospy.spin()
 
+
+commander = MoveGroupCommander()
+
 def start_manip_gp(gp):
+    global commander
     try:
         print("Starting Manip GP Commander")
-        
-        commander = MoveGroupCommander()
 
         if gp is not None:
             return commander.go_to_pose_goal(gp)
+            # cartesian = commander.attempt_cartesian_path(gp)
+            # print(cartesian)
+            # return cartesian
+            if cartesian == True:
+                return cartesian
+            else:
+                return commander.go_to_pose_goal(gp)
         else:
             print("Please pass manipulator goal point")
             
