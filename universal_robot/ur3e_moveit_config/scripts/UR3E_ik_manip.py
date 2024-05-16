@@ -51,14 +51,15 @@ import rospy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Quaternion
 from std_msgs.msg import String, Float32MultiArray
-from moveit_commander.conversions import pose_to_list
+from moveit_commander.conversions import pose_to_list, list_to_pose
 
 # import scout_ur3e
 # from scout_ur3e.srv import *
 import ur3e_moveit_config
 from ur3e_moveit_config.srv import *
+from tf.transformations import *
 
 use_map = True
 
@@ -101,6 +102,24 @@ def all_close(goal, actual, tolerance):
         return d <= tolerance and cos_phi_half >= cos(tolerance / 2.0)
 
     return True
+
+def rotate_pose(gp, euler):
+    # Set goal Pose that is rotated
+    rpy = quaternion_from_euler(euler[0], euler[1], euler[2])
+
+    pose_goal = gp.pose
+
+    gp_q = []
+    gp_q.append(pose_goal.orientation.x)
+    gp_q.append(pose_goal.orientation.y)
+    gp_q.append(pose_goal.orientation.z)
+    gp_q.append(pose_goal.orientation.w)
+    new_q = quaternion_multiply(gp_q, rpy)
+    newGP = list_to_pose([pose_goal.position.x, pose_goal.position.y, pose_goal.position.z, new_q[0], new_q[1], new_q[2], new_q[3]])
+    print("New GP")
+    print(newGP)
+
+    return newGP
 
 class MoveGroupCommander(object):
     
@@ -221,8 +240,12 @@ class MoveGroupCommander(object):
         return success
 
     def go_to_pose_goal(self, gp):
-        # Set goal Pose
-        pose_goal = gp.pose
+        
+        print("First GP")
+        print(gp)
+
+        # Create new goal pose
+        pose_goal = rotate_pose(gp, [0, pi/2, 0])
         self.move_group.set_pose_target(pose_goal, "wrist_3_link")
 
         ## Now, we call the planner to compute the plan and execute it.
