@@ -211,17 +211,23 @@ class MoveGroupCommander(object):
         if jointState.positionState == 1:
             joint_goal.append(pi)
             joint_goal.append(-1.0 * pi/2)
-            joint_goal.append(0)
+            joint_goal.append(0.175)
             joint_goal.append(-1.0 * pi/2)
             joint_goal.append(-1.0 * pi/2)
-            joint_goal.append(0)
+            joint_goal.append(0.00)
         else:
             joint_goal.append(0.00)
-            joint_goal.append(3.84) #220
-            joint_goal.append(-2.79) #160
+            joint_goal.append(0.00) #220
+            joint_goal.append(-2.61) #-150
+            joint_goal.append(-0.52) #-30
             joint_goal.append(0.00)
-            joint_goal.append(-pi/2)
-            joint_goal.append(-pi)
+            joint_goal.append(0.00)
+            # joint_goal.append(0.00)
+            # joint_goal.append(3.85) #220
+            # joint_goal.append(-2.62) #-160
+            # joint_goal.append(0.00)
+            # joint_goal.append(-pi/2)
+            # joint_goal.append(0.00)
 
         return self.go_to_joint_state(joint_goal)
 
