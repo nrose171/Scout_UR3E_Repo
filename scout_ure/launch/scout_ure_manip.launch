@@ -1,0 +1,27 @@
+<launch>
+
+  <arg name="Use_RVIZ"   default="false"/>
+  <arg name="Use_Map_CF" default="true"/>
+  <arg name="ure_type" default="ur5e"/>
+
+  <!-- Load scout description: Disable for final tests -->
+  <!-- <include file="$(find scout_ure)/launch/scout_ure_empty_world.launch">
+    <arg name="ure_type" value="$(arg ure_type)"/>
+  </include> -->
+
+  <!-- URE Moveit Planner -->
+  <include file="$(eval find(arg('ure_type') + '_moveit_config') + '/launch/moveit_planning_execution.launch')" >
+    <arg name="sim" value="true" />
+  </include>
+  
+  <!-- URE Moveit Service -->
+  <node name="$(eval arg('ure_type') + '_ik_manip_srv')" pkg="$(eval arg('ure_type') + '_moveit_config')" type="$(eval arg('ure_type') + '_ik_manip.py')" args="$(arg Use_Map_CF)">
+    <param name="/use_sim_time" value="true"/>
+  </node>
+
+  <!-- RVIZ -->
+  <group if="$(arg Use_RVIZ)">
+    <include file="$(eval find(arg('ure_type') + '_moveit_config') + '/launch/moveit_rviz.launch')"/>
+  </group>
+
+</launch>

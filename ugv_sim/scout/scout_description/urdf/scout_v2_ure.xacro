@@ -1,0 +1,307 @@
+<?xml version="1.0"?>
+
+<robot name="scout_v2" 
+    xmlns:xacro="http://ros.org/wiki/xacro">
+
+
+    <xacro:arg name="ure_type" default="ur5e" />
+
+    <xacro:arg name="robot_namespace" default="/" />
+    <xacro:arg name="urdf_extras" default="empty.urdf" />
+
+    <xacro:include filename="$(find scout_description)/urdf/scout_wheel_type1.xacro" />
+    <xacro:include filename="$(find scout_description)/urdf/scout_wheel_type2.xacro" />
+
+    <!-- Variables -->
+    <xacro:property name="M_PI" value="3.14159"/>
+
+    <!-- Vehicle Geometries -->
+    <xacro:property name="base_x_size" value="0.9250000" />
+    <xacro:property name="base_y_size" value="0.380000" />
+    <xacro:property name="base_z_size" value="0.210000" />
+
+    <xacro:property name="wheelbase" value="0.498" />
+    <xacro:property name="track" value="0.58306" />
+    <xacro:property name="wheel_vertical_offset" value="-0.0702" />
+
+    <xacro:property name="wheel_length" value="1.1653e-01" />
+    <xacro:property name="wheel_radius" value="1.6459e-01" />
+
+    <!-- SCOUT -->
+    
+    <link name="scout_base_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <mesh filename="package://scout_description/meshes/base_link.dae" />
+            </geometry>
+        </visual>
+        <collision>
+            <origin xyz="0 0 0.008" rpy="0 0 0" />
+            <geometry>
+                <box size="${base_x_size} ${base_y_size} ${base_z_size}"/>
+            </geometry>
+        </collision>
+        <collision>
+            <origin xyz="0 0 ${base_z_size/6}" rpy="0 0 0" />
+            <geometry>
+                <box size="${base_x_size/6} ${base_y_size*1.65} ${base_z_size/3}"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- <joint name="chassis_link_joint" type="fixed">
+        <origin xyz="0 0 ${wheel_radius - wheel_vertical_offset}" rpy="0 0 0" />
+        <parent link="base_link" />
+        <child link="chassis_link" />
+    </joint> -->
+
+    <link name="scout_inertial_link">
+        <inertial>
+            <mass value="50" />
+            <origin xyz="0.0 0.0 0.0" />
+            <inertia ixx="2.288641" ixy="0" ixz="0" iyy="5.103976" iyz="0" izz="3.431465" />
+        </inertial>
+    </link>
+
+    <joint name="inertial_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <parent link="scout_base_link" />
+        <child link="scout_inertial_link" />
+    </joint>
+
+    <!-- Scout wheel macros -->
+    <!-- wheel labeled from 0 to 3, conter-clockwise, starting from front right wheel -->
+    <!-- motor 1 and 2 (left side) are mechanically installed in a reversed direction -->
+    <xacro:scout_wheel_type1 wheel_prefix="front_right">
+        <origin xyz="${wheelbase/2} ${-track/2} ${wheel_vertical_offset}" rpy="3.14 0 0" />
+    </xacro:scout_wheel_type1>
+    <xacro:scout_wheel_type2 wheel_prefix="front_left">
+        <origin xyz="${wheelbase/2} ${track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+    </xacro:scout_wheel_type2>
+    <xacro:scout_wheel_type1 wheel_prefix="rear_left">
+        <origin xyz="${-wheelbase/2} ${track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+    </xacro:scout_wheel_type1>
+    <xacro:scout_wheel_type2 wheel_prefix="rear_right">
+        <origin xyz="${-wheelbase/2} ${-track/2} ${wheel_vertical_offset}" rpy="3.14 0 0" />
+    </xacro:scout_wheel_type2>
+    
+
+    <!-- URE Insert -->
+
+    <!--Parameter files -->
+    <xacro:arg name="joint_limit_params" default="$(find ur_description)/config/$(arg ure_type)/joint_limits.yaml"/>
+    <xacro:arg name="kinematics_params" default="$(find ur_description)/config/$(arg ure_type)/default_kinematics.yaml"/>
+    <xacro:arg name="physical_params" default="$(find ur_description)/config/$(arg ure_type)/physical_parameters.yaml"/>
+    <xacro:arg name="visual_params" default="$(find ur_description)/config/$(arg ure_type)/visual_parameters.yaml"/>
+
+    <!--Common parameters -->
+    <xacro:arg name="transmission_hw_interface" default="hardware_interface/EffortJointInterface" doc="The hardware_interface to expose for each joint in the simulated robot (one of: [PositionJointInterface, VelocityJointInterface, EffortJointInterface])"/>
+    <!-- <xacro:arg name="transmission_hw_interface" default="hardware_interface/PositionJointInterface" doc="The hardware_interface to expose for each joint in the simulated robot (one of: [PositionJointInterface, VelocityJointInterface, EffortJointInterface])"/> -->
+    <xacro:arg name="safety_limits" default="false" doc="If True, enable the safety limits controller"/>
+    <xacro:arg name="safety_pos_margin" default="0.15" doc="The lower/upper limits in the safety controller" />
+    <xacro:arg name="safety_k_position" default="20" doc="Used to set k position in the safety controller" />
+
+
+    <xacro:include filename="$(find ur_description)/urdf/inc/ur_macro.xacro"/>
+    <xacro:ur_robot
+      prefix=""
+      joint_limits_parameters_file="$(arg joint_limit_params)"
+      kinematics_parameters_file="$(arg kinematics_params)"
+      physical_parameters_file="$(arg physical_params)"
+      visual_parameters_file="$(arg visual_params)"
+      transmission_hw_interface="$(arg transmission_hw_interface)"
+      safety_limits="$(arg safety_limits)"
+      safety_pos_margin="$(arg safety_pos_margin)"
+      safety_k_position="$(arg safety_k_position)"
+      />
+
+    <joint name="scout_$(arg ure_type)_joint" type="fixed">
+      <parent link="scout_base_link"/>
+      <child link="base_link"/>
+      <axis xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="${base_y_size-0.1} 0 ${base_z_size-0.09}" rpy="0 0 ${pi}"/>
+    </joint>
+
+    <!-- Drilling end effector -->
+    <!-- <link name="drill_end_effector_link">
+        <visual>
+            <geometry>
+                <mesh filename="package://scout_description/meshes/poly_drill/drilling_end_effector.dae" />
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+        </visual>
+        <collision>
+            <geometry>
+                <mesh filename="package://scout_description/meshes/poly_drill/drilling_end_effector.dae" />
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+        </collision>
+    </link>
+
+    <joint name="drill_end_effector_joint" type="fixed">
+      <parent link="wrist_3_link"/>
+      <child link="drill_end_effector_link"/>
+      <axis xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 0.005" rpy="${pi} 0 0"/>
+    </joint> -->
+
+    <!-- LIDAR -->
+    <!-- <xacro:property name="M_PI" value="3.1415926535897931" />
+    <xacro:include filename="$(find velodyne_description)/urdf/VLP-16.urdf.xacro"/>
+    <xacro:VLP-16 parent="scout_base_link" name="velodyne"
+        topic="/velodyne_points" hz="10" gpu="false"
+        organize_cloud="false" lasers:="16" samples="1875" collision_range="0.3" 
+        min_range="0.9" max_range="130.0" noise="0.0" min_angle="-${M_PI}" max_angle="${M_PI}">
+        <origin xyz="0 0 0.4" rpy="0 0 0" />
+    </xacro:VLP-16> -->
+
+    <link name="laser_frame">
+      <inertial>
+        <mass value="0.425"/>
+        <origin xyz="0 0 0.003675" rpy="0 0 0" />
+        <inertia ixx="0.000308429" ixy="0" ixz="0"
+                  iyy="0.000308429" iyz="0" izz="0.00034589"/>
+      </inertial>
+      <!-- <collision name="lidar_collision">
+        <origin xyz="0 0 0.03675" rpy="0 0 0" />
+        <geometry>
+          <cylinder radius="0.04350" length="0.07350"/>
+        </geometry>
+      </collision> -->
+      <visual name="lidar_visual">
+        <origin xyz="0 0 0.0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="$(find scout_description)/meshes/os1_64.stl" />
+        </geometry>
+      </visual>
+    </link>
+
+    <joint name="laser_joint" type="fixed">
+      <parent link="scout_base_link"/>
+      <child link="laser_frame"/>
+      <origin xyz="${base_y_size+0.02} 0 ${0.1}" rpy="0 0 0"/>
+    </joint>
+
+
+
+    <!-- <gazebo reference="laser_frame">
+        <sensor type="depth" name="l515">
+          <updateRate>10.0</updateRate> #30.0
+          <always_on>true</always_on>
+          <visualize>true</visualize>
+          <camera>
+            <updateRate>0.0</updateRate> #Keep this zero, update_rate in the parent sensor tag controls the frame rate.
+            <horizontal_fov>${70.0*pi/180}</horizontal_fov>
+            <image>
+              <width>1024</width>
+              <height>768</height>
+              <format>R8G8B8</format>
+            </image>
+            <depth_camera>
+            </depth_camera>
+            <clip>
+              <near>0.2</near>
+              <far>200</far>
+            </clip>
+          </camera>
+          <plugin name="camera_controller" filename="libgazebo_ros_openni_kinect.so">
+            <robotNamespace>$(arg robot_namespace)</robotNamespace>
+            <alwaysOn>true</alwaysOn>
+              <updateRate>0.0</updateRate> #Keep this zero, update_rate in the parent sensor tag controls the frame rate.
+              <cameraName>l515</cameraName>
+              <frameName>laser_frame</frameName>
+            <imageTopicName>color/image_raw</imageTopicName>
+            <depthImageTopicName>aligned_depth_to_color/image_raw</depthImageTopicName>
+            <depthImageCameraInfoTopicName>aligned_depth_to_color/camera_info</depthImageCameraInfoTopicName>
+            <pointCloudTopicName>depth/color/points</pointCloudTopicName>
+            <cameraInfoTopicName>color/camera_info</cameraInfoTopicName>
+            <pointCloudCutoff>5.0</pointCloudCutoff>
+            <pointCloudCutoffMax>500.0</pointCloudCutoffMax> #9.0
+              <hackBaseline>0.07</hackBaseline> #0.07
+              <distortionK1>0.0</distortionK1>
+              <distortionK2>0.0</distortionK2>
+              <distortionK3>0.0</distortionK3>
+              <distortionT1>0.0</distortionT1>
+              <distortionT2>0.0</distortionT2>
+            <CxPrime>0.0</CxPrime>
+            <Cx>0.0</Cx>
+            <Cy>0.0</Cy>
+            <focalLength>0.0</focalLength>
+          </plugin>
+        </sensor>
+      </gazebo> -->
+
+    <!-- Add lidar plugin for scan topic -->
+    <gazebo reference="laser_frame">
+        <material>Gazebo/Red</material>
+ 
+        <sensor name="laser" type="ray">
+            <pose> 0 0 0 0 0 0 </pose>
+            <visualize>true</visualize>
+            <update_rate>10</update_rate>
+            <ray>
+                <scan>
+                    <horizontal>
+                        <resolution>1</resolution>
+                        <samples>180</samples>
+                        <min_angle>-1.57</min_angle>
+                        <max_angle>1.57</max_angle>
+                    </horizontal>
+                </scan>
+                <range>
+                    <resolution>0.1</resolution>
+                    <min>0.5</min>
+                    <max>100</max>
+                </range>
+            </ray>
+            <plugin name="laser_controller" filename="libgazebo_ros_laser.so">
+                <topicName>/scan</topicName>
+                <frameName>laser_frame</frameName>
+            </plugin>
+        </sensor>
+    </gazebo>
+
+    <!-- NOT WORKING: Gazebo ODOM plugin -->
+    <!-- <gazebo>
+        <plugin name="p3e_odometry" filename="libgazebo_ros_p3d.so">
+            <frameName>map</frameName>
+            <alwaysOn>true</alwaysOn>
+            <robotNamespace></robotNamespace>
+            <bodyName>scout_base_link</bodyName>
+            <topicName>odom</topicName>
+            <updateRate>100.0</updateRate>
+            <gaussianNoise>0.0</gaussianNoise>
+            <xyzOffsets>0 0 0</xyzOffsets>
+            <rpyOffsets>0 0 0</rpyOffsets>
+        </plugin>
+    </gazebo> -->
+
+    <!-- Add Skid steer controller for odom topic -->
+    <gazebo>
+        <plugin name="skid_steer_drive_controller" filename="libgazebo_ros_skid_steer_drive.so">
+            <updateRate>100.0</updateRate>
+            <robotNamespace>/</robotNamespace>
+            <leftFrontJoint>front_left_wheel</leftFrontJoint>
+            <rightFrontJoint>front_right_wheel</rightFrontJoint>
+            <leftRearJoint>rear_left_wheel</leftRearJoint>
+            <rightRearJoint>rear_right_wheel</rightRearJoint>
+            <wheelSeparation>4</wheelSeparation>
+            <robotBaseFrame>scout_base_link</robotBaseFrame>
+            <commandTopic>cmd_vel</commandTopic>
+            <broadcastTF>true</broadcastTF>
+            <!-- <odometrySource>map</odometrySource> -->
+            <odometryTopic>odom</odometryTopic>
+            <odometryFrame>odom</odometryFrame>
+            <covariance_x>0.0</covariance_x>
+            <covariance_y>0.0</covariance_y>
+            <covariance_yaw>0.0</covariance_yaw>
+        </plugin>
+    </gazebo>
+
+    <!-- Additional definitions -->
+    <xacro:include filename="$(arg urdf_extras)" />
+
+    <!-- Gazebo definitions  -->
+    <xacro:include filename="$(find scout_description)/urdf/scout_v2.gazebo" />
+</robot>

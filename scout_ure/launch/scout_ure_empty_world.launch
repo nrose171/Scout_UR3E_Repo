@@ -3,6 +3,9 @@
 
     <env name="GAZEBO_MODEL_PATH" value="$(find object_spawner)/models/" />
 
+    <!-- Type of URE -->
+    <arg name="ure_type" default="ur5e"/>
+
     <!-- Scout files -->
 
     <!-- initial pose -->
@@ -53,7 +56,7 @@
     <arg name="urdf_extras" default="$(find scout_description)/urdf/empty.urdf"/>
 
     <!-- <arg name="world_name" default="worlds/empty.world" doc="The '.world' file to load in Gazebo." /> -->
-    <arg name="world_name" default="$(find scout_ur3e)/worlds/scout_playpen.world"/>
+    <arg name="world_name" default="$(find scout_ure)/worlds/scout_playpen.world"/>
 
     <!-- Start Gazebo -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -66,8 +69,9 @@
     </include>
 
     <!-- Load Model Description and Controllers -->
-    <include file="$(find scout_description)/launch/scout_v2_ur3e_stock.launch">
+    <include file="$(find scout_description)/launch/scout_v2_ure_stock.launch">
         <arg name="robot_namespace" value="$(arg robot_namespace)" />
+        <arg name="ure_type" value="$(arg ure_type)" />
     </include>
 
     <!-- Load joint controller configurations from YAML file to parameter server -->

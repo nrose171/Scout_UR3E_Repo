@@ -2,7 +2,7 @@
   <!-- Arguments -->
   <arg name="cmd_vel_topic" default="/cmd_vel" />
   <arg name="odom_topic" default="/odom" />
-  <arg name="dir_path" default="$(find scout_ur3e)/params"/>
+  <arg name="dir_path" default="$(find scout_ure)/params"/>
 
   <!-- <arg name="base_global_planner" default="global_planner/RRTGlobalPlanner"/> -->
   <!-- <arg name="base_local_planner" default="base_local_planner/TrajectoryPlannerROS"/> -->

@@ -1,0 +1,58 @@
+
+<launch>
+
+    <!-- URE Type -->
+    <arg name="ure_type" default="ur5e"/>
+
+    <!-- initial pose -->
+    <arg name="x" default="0.0"/>
+    <arg name="y" default="0.0"/>
+    <arg name="z" default="0.0"/>
+    <arg name="yaw" default="0.0"/>
+    
+    <arg name="robot_namespace" default=""/>
+    <arg name="urdf_extras" default="$(find scout_description)/urdf/empty.urdf"/>
+
+    <!--Robot description and related parameter files -->
+    <!-- <arg name="robot_description_file" default="$(find ur_gazebo)/launch/inc/load_$(arg ure_type).launch.xml" doc="Launch file which populates the 'robot_description' parameter."/> -->
+    <arg name="joint_limit_params" default="$(find ur_description)/config/$(arg ure_type)/joint_limits.yaml"/>
+    <arg name="kinematics_params" default="$(find ur_description)/config/$(arg ure_type)/default_kinematics.yaml"/>
+    <arg name="physical_params" default="$(find ur_description)/config/$(arg ure_type)/physical_parameters.yaml"/>
+    <arg name="visual_params" default="$(find ur_description)/config/$(arg ure_type)/visual_parameters.yaml"/>
+
+    <!-- Controller configuration -->
+    <arg name="controller_config_file" default="$(find ur_gazebo)/config/$(arg ure_type)_controllers.yaml" doc="Config file used for defining the ROS-Control controllers."/>
+    <arg name="controllers" default="joint_state_controller eff_joint_traj_controller" doc="Controllers that are activated by default."/>
+    <arg name="stopped_controllers" default="joint_group_eff_controller" doc="Controllers that are initally loaded, but not started."/>
+
+    <param name="robot_description" command="$(find xacro)/xacro '$(find scout_description)/urdf/scout_v2_ure.xacro'
+        robot_namespace:=$(arg robot_namespace) 
+        urdf_extras:=$(arg urdf_extras)
+        ure_type:=$(arg ure_type)" />
+
+
+    <!-- Load controller settings -->
+    <rosparam file="$(arg controller_config_file)" command="load"/>
+
+
+    <!-- UR3E Files-->
+
+    <!-- robot_state_publisher configuration -->
+    <arg name="tf_prefix" default="" doc="tf_prefix used for the robot."/>
+    <arg name="tf_pub_rate" default="500" doc="Rate at which robot_state_publisher should publish transforms."/>
+
+    <!-- Robot state publisher -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="$(arg tf_pub_rate)" />
+        <param name="tf_prefix" value="$(arg tf_prefix)" />
+    </node>
+
+    <!-- Load and start the controllers listed in the 'controllers' arg. -->
+    <node name="ros_control_controller_spawner" pkg="controller_manager" type="spawner"
+        args="$(arg controllers)" output="screen" respawn="false" />
+
+    <!-- Load other controllers, but do not start them -->
+    <node name="ros_control_stopped_spawner" pkg="controller_manager" type="spawner"
+        args="--stopped $(arg stopped_controllers)" output="screen" respawn="false" />
+
+</launch>

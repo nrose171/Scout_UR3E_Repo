@@ -6,7 +6,7 @@ import rospkg
 import geometry_msgs.msg as gm
 
 rospack = rospkg.RosPack()
-dir_path = rospack.get_path('scout_ur3e')
+dir_path = rospack.get_path('scout_ure')
 gz_re_path = dir_path + "/gazebo_resources/"
 
 spawn_model_client = rospy.ServiceProxy('/gazebo/spawn_sdf_model', SpawnModel)

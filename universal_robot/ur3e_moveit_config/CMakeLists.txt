@@ -12,22 +12,22 @@ find_package(catkin REQUIRED COMPONENTS
   )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  DIRECTORY srv
-  FILES
-  GoToManipGP.srv
-  GoToManipJoints.srv
-  ResetJoints.srv
-)
+# add_service_files(
+#   DIRECTORY srv
+#   FILES
+#   GoToManipGP.srv
+#   GoToManipJoints.srv
+#   ResetJoints.srv
+# )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs
-  nav_msgs
-  sensor_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs
+#   geometry_msgs
+#   nav_msgs
+#   sensor_msgs
+# )
 
 catkin_package()
 
@@ -42,7 +42,7 @@ if (CATKIN_ENABLE_TESTING)
 endif()
 
 install(FILES
-   scripts/UR3E_ik_manip.py
+   scripts/ur3e_ik_manip.py
    # myfile2
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )

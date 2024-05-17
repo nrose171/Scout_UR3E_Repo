@@ -55,10 +55,8 @@ from geometry_msgs.msg import Pose, Quaternion
 from std_msgs.msg import String, Float32MultiArray
 from moveit_commander.conversions import pose_to_list, list_to_pose
 
-# import scout_ur3e
-# from scout_ur3e.srv import *
-import ur3e_moveit_config
-from ur3e_moveit_config.srv import *
+# import ur5e_moveit_config
+from scout_ure.srv import *
 from tf.transformations import *
 
 use_map = True
@@ -179,7 +177,7 @@ class MoveGroupCommander(object):
         # plannerPipeline = "ompl"
         ref_frame = "base_link"
         planning_attempts = 100  # planning attempts
-        planning_time = 2  # [s] Planning time for computation
+        planning_time = 5  # [s] Planning time for computation
 
         move_group.set_planner_id(planner)
         # move_group.set_planning_pipeline_id(plannerPipeline)

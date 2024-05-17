@@ -25,12 +25,12 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # Manipulator Client
-from ur3e_moveit_config.srv import *
+from scout_ure.srv import *
 
 import networkx as nx
 
 rospack = rospkg.RosPack()
-data_path = rospack.get_path('scout_ur3e') +"/gazebo_resources/"
+data_path = rospack.get_path('scout_ure') +"/gazebo_resources/"
  
 def create_graph_perform_dfs(pose_df, comp_boat_df, arm_base_point, max_dist_node_idx, plotting=False):
     # print(pose_df)
@@ -267,7 +267,6 @@ class BehaviourTracker:
     """
     def __init__(self):
         rospy.init_node('behaviour_tracker')
-        # data_path = "/root/Scout_UR3E_Repo/src/object_spawner/gazebo_resources"
         self.boat_df = pd.read_csv(f"{data_path}/model_facets/boat.csv")
         self.mesh = get_mesh(f'{data_path}/models/boat/meshes/boat.dae')
         self.mesh_pub = rospy.Publisher('/mesh', Marker, queue_size=10)
@@ -477,4 +476,3 @@ if __name__ == '__main__':
         bt.run()
     except rospy.ROSInterruptException:
         pass
-

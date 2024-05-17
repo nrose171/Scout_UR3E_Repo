@@ -1,0 +1,30 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="map_file" default="$(find scout_ure)/maps/scout_map.yaml"/>
+  <arg name="ure_type" default="ur5e"/>
+
+  <!-- Scout URE -->
+  <!-- <include file="$(find scout_ure)/launch/scout_ure_empty_world.launch">
+    <arg name="ure_type" value="$(arg ure_type)"/>
+  </include> -->
+
+  <!-- Spawn Boat -->
+  <node name="object_spawner_node" pkg="scout_ure" type="spawn_boat.py" />
+  <!-- <include file="$(find object_spawner)/launch/boat_spawner.launch"/> -->
+
+  <!-- SLAM -->
+  <include file="$(find scout_ure)/launch/scout_ure_gmapping.launch"/>
+
+  <!-- Map server -->
+  <!-- <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)"/> -->
+
+  <!-- AMCL -->
+  <include file="$(find scout_ure)/launch/amcl.launch"/>
+
+  <!-- move_base -->
+  <include file="$(find scout_ure)/launch/scout_ure_move_base.launch"/>
+
+  <!-- rviz -->
+  <include file="$(find scout_ure)/launch/display_scout_ure.launch"/>
+
+</launch>
