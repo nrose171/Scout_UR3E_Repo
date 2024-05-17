@@ -251,10 +251,9 @@ class MoveGroupCommander(object):
         return success
 
     def go_to_pose_goal(self, gp):
-
-        self.move_group.set_pose_reference_frame("base_link")
-        print("First GP")
-        print(gp)
+        global use_map
+        if use_map is True:
+            self.move_group.set_pose_reference_frame("map")
 
         # Create new goal pose
         pose_goal = rotate_pose(gp, [0, pi/2, 0])

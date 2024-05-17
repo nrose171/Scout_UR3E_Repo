@@ -393,6 +393,10 @@ class BehaviourTracker:
 
 
     def reach_sector_position(self, sector_index):
+
+        # Call the joint reset service before moving
+        result = call_manipulator_reset_service(0)
+
         self.sector_start_angle = sector_index * self.sector_size
         self.sector_end_angle = (sector_index + 1) * self.sector_size
         # print(self.sector_start_angle, self.sector_end_angle)
