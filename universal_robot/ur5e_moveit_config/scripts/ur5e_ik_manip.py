@@ -216,12 +216,12 @@ class MoveGroupCommander(object):
             joint_goal.append(-1.0 * pi/2)
             joint_goal.append(0)
         else:
-            joint_goal.append(pi)
-            joint_goal.append(0)
-            joint_goal.append(pi/2)
-            joint_goal.append(-1.0 * pi/2)
-            joint_goal.append(pi/2)
-            joint_goal.append(0)
+            joint_goal.append(0.00)
+            joint_goal.append(3.84) #220
+            joint_goal.append(-2.79) #160
+            joint_goal.append(0.00)
+            joint_goal.append(-pi/2)
+            joint_goal.append(-pi)
 
         return self.go_to_joint_state(joint_goal)
 

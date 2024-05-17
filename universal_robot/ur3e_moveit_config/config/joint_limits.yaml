@@ -51,16 +51,16 @@ joint_limits:
     max_acceleration: 0
   wrist_1_joint:
     has_velocity_limits: false
-    max_velocity: 6.283185307179586
+    max_velocity: 20.0
     has_acceleration_limits: false
     max_acceleration: 0
   wrist_2_joint:
     has_velocity_limits: false
-    max_velocity: 6.283185307179586
+    max_velocity: 20.0
     has_acceleration_limits: false
     max_acceleration: 0
   wrist_3_joint:
     has_velocity_limits: false
-    max_velocity: 6.283185307179586
+    max_velocity: 20.0
     has_acceleration_limits: false
     max_acceleration: 0
