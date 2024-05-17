@@ -179,7 +179,7 @@ class MoveGroupCommander(object):
         # plannerPipeline = "ompl"
         ref_frame = "base_link"
         planning_attempts = 100  # planning attempts
-        planning_time = 5  # [s] Planning time for computation
+        planning_time = 2  # [s] Planning time for computation
 
         move_group.set_planner_id(planner)
         # move_group.set_planning_pipeline_id(plannerPipeline)
@@ -192,7 +192,7 @@ class MoveGroupCommander(object):
         move_group.allow_replanning(True)
         move_group.clear_path_constraints()
         move_group.clear_trajectory_constraints()
-        move_group.set_goal_tolerance(0.01)
+        move_group.set_goal_tolerance(0.1)
         move_group.set_num_planning_attempts(planning_attempts)
         move_group.set_planning_time(planning_time)
 
