@@ -192,6 +192,7 @@ class MoveGroupCommander(object):
         move_group.allow_replanning(True)
         move_group.clear_path_constraints()
         move_group.clear_trajectory_constraints()
+
         move_group.set_goal_tolerance(0.1) #0.01 
         move_group.set_num_planning_attempts(planning_attempts)
         move_group.set_planning_time(planning_time)

@@ -340,12 +340,18 @@ class BehaviourTracker:
         # print("unvisited_reachable_poses : ", len(unvisited_reachable_poses))
         # print(unvisited_reachable_poses)
         # unvisited_reachable_poses = all_reachable_poses[all_reachable_poses["visited"] == False]
-        if len(boat_point_dist[unvisited_reachable_poses.index]) == 0: return
+        if len(boat_point_dist[unvisited_reachable_poses.index]) == 0: 
+            unvisited_reachable_poses = self.boat_df.loc[(self.boat_df["visited"] == False) & (boat_point_dist < 1.25), :]
+            if len(boat_point_dist[unvisited_reachable_poses.index]) == 0: 
+                return
         farthest_point_idx = boat_point_dist[unvisited_reachable_poses.index].idxmax()
         
         pose_visit_order = create_graph_perform_dfs(self.boat_df.loc[unvisited_reachable_poses.index, :], self.boat_df, self.base_point, farthest_point_idx, plotting=False)
+        assert(len(pose_visit_order) == len(boat_point_dist[unvisited_reachable_poses.index]))
+        assert(len(pose_visit_order) == len(self.boat_df.loc[unvisited_reachable_poses.index, :]))
+
         for node_idx in pose_visit_order:
-            # print(node_idx, len(self.boat_df))
+            print(node_idx, len(self.boat_df))
             if node_idx >= len(self.boat_df):
                 print(f"Skipping node {node_idx}")
                 continue
@@ -353,21 +359,22 @@ class BehaviourTracker:
             self.mesh_pub.publish(self.mesh)
             self.pub_mb_pose_array.publish(self.mobile_base_pose_array)
 
-            self.end_effector_pose_array = process_pose_array(self.boat_df.loc[unvisited_reachable_poses.index, :], #.iloc[node_idx:node_idx+1], 
+            self.end_effector_pose_array = process_pose_array(unvisited_reachable_poses, #.iloc[node_idx:node_idx+1], 
                                                             dist = 0.3, horizontal=False, num_skip=1)
             self.pub_curr_ee_pose_array.publish(self.end_effector_pose_array)
             
-            pose_to_visit = process_pose_array((self.boat_df.loc[node_idx:((node_idx+1)%len(self.boat_df)),:]), 
-                                        dist = 0.3, horizontal=False, num_skip=1)
+            print(unvisited_reachable_poses.loc[node_idx:node_idx])
+            pose_to_visit = process_pose_array((unvisited_reachable_poses.loc[node_idx:(node_idx),:]), dist = 0.3, horizontal=False, num_skip=1)
             
-            if len(pose_to_visit.poses) > 0:
-                # Call Manipulator service
-                result = call_manipulator_move_service(pose_to_visit.poses[0]) # True # 
-                # print("RESULT: ", result)
-                if result.reachedGP == True:
-                    self.successful_poses.append(pose_to_visit.poses[0])
-                else:
-                    self.failed_poses.append(pose_to_visit.poses[0])
+            # if len(pose_to_visit.poses) > 0:
+            # Call Manipulator service
+            print("Calling manipulator service")
+            result = call_manipulator_move_service(pose_to_visit.poses[0]) # True # 
+            # print("RESULT: ", result)
+            if result.reachedGP == True:
+                self.successful_poses.append(pose_to_visit.poses[0])
+            else:
+                self.failed_poses.append(pose_to_visit.poses[0])
 
             self.pub_successful_ee_poses.publish(compose_pose_array(self.successful_poses))
             self.pub_failed_ee_poses.publish(compose_pose_array(self.failed_poses))
@@ -378,8 +385,6 @@ class BehaviourTracker:
             self.pub_ee_pose_array.publish(self.visited_end_effector_pose_array)
             print(" ", end="")
         
-        if node_idx >= len(self.boat_df): return
-
         time.sleep(0.1)
 
         self.boat_vis_pub.publish(self.boat_facet_pose_array)
