@@ -25,7 +25,7 @@ import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # Manipulator Client
-from ur3e_moveit_config.srv import GoToManipGP, GoToManipJoints
+from ur3e_moveit_config.srv import *
 
 import networkx as nx
 
@@ -230,15 +230,27 @@ def call_movebase_service(goal_pose):
     # Result of executing the action
         return client.get_goal_status_text()
 
-def call_manipulator_service(goal_pose):
-    # Expected input: Pose w.r.t. map coordinate frame
+# Expected input: Pose w.r.t. map coordinate frame
+def call_manipulator_move_service(goal_pose):
     # Wait for the manipulator service
     rospy.wait_for_service('manip_gp_srv')
     try:
-
         # Push goal pose message
         push_msg = rospy.ServiceProxy('manip_gp_srv', GoToManipGP)
         response = push_msg(goal_pose)
+        return response
+
+    except rospy.ServiceException as e:
+        print("Service call failed: %s"%e)
+
+# Expected input: int32 with 1 for top and 0 for bottom state
+def call_manipulator_reset_service(joint_state):
+    # Wait for the manipulator service
+    rospy.wait_for_service('manip_reset_srv')
+    try:
+        # Push joint state message
+        push_msg = rospy.ServiceProxy('manip_reset_srv', ResetJoints)
+        response = push_msg(joint_state)
         return response
 
     except rospy.ServiceException as e:
@@ -324,7 +336,7 @@ class BehaviourTracker:
 
     def survey_sector(self, sector_index):
         boat_point_dist = self.boat_df[["x", "y", "z"]][(self.boat_df["visited"] == False)].sub(self.base_point, axis=1).pow(2).sum(axis=1).pow(.5)
-        unvisited_reachable_poses = self.boat_df.loc[(self.boat_df["visited"] == False) & (boat_point_dist < 0.75*self.arm_reach), :]
+        unvisited_reachable_poses = self.boat_df.loc[(self.boat_df["visited"] == False) & (boat_point_dist < 1.1), :]
         # print("unvisited_reachable_poses : ", len(unvisited_reachable_poses))
         # print(unvisited_reachable_poses)
         # unvisited_reachable_poses = all_reachable_poses[all_reachable_poses["visited"] == False]
@@ -342,15 +354,15 @@ class BehaviourTracker:
             self.pub_mb_pose_array.publish(self.mobile_base_pose_array)
 
             self.end_effector_pose_array = process_pose_array(self.boat_df.loc[unvisited_reachable_poses.index, :], #.iloc[node_idx:node_idx+1], 
-                                                            dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
+                                                            dist = 0.3, horizontal=False, num_skip=1)
             self.pub_curr_ee_pose_array.publish(self.end_effector_pose_array)
             
             pose_to_visit = process_pose_array((self.boat_df.loc[node_idx:((node_idx+1)%len(self.boat_df)),:]), 
-                                        dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
+                                        dist = 0.3, horizontal=False, num_skip=1)
             
             if len(pose_to_visit.poses) > 0:
                 # Call Manipulator service
-                result = call_manipulator_service(pose_to_visit.poses[0]) # True # 
+                result = call_manipulator_move_service(pose_to_visit.poses[0]) # True # 
                 # print("RESULT: ", result)
                 if result.reachedGP == True:
                     self.successful_poses.append(pose_to_visit.poses[0])
@@ -362,7 +374,7 @@ class BehaviourTracker:
 
             self.boat_df.loc[node_idx, ["visited"]] = True
             self.visited_end_effector_pose_array = process_pose_array(self.boat_df[self.boat_df["visited"] == True], 
-                                                                dist = 0.3*self.arm_reach, horizontal=False, num_skip=1)
+                                                                dist = 0.3, horizontal=False, num_skip=1)
             self.pub_ee_pose_array.publish(self.visited_end_effector_pose_array)
             print(" ", end="")
         
@@ -395,7 +407,7 @@ class BehaviourTracker:
                                    'qx': [mean_quat['qx']], 
                                    'qy': [mean_quat['qy']], 
                                    'qz': [mean_quat['qz']], 'qw': [mean_quat['qw']]})
-        self.mobile_base_pose_array = process_pose_array(mb_pose_df, dist = 0.75, horizontal=True)
+        self.mobile_base_pose_array = process_pose_array(mb_pose_df, dist = 1.25, horizontal=True)
         base_position = self.mobile_base_pose_array.poses[0].position
         base_x, base_y, base_z = base_position.x, base_position.y, self.mb_arm_base_height
         self.base_point = np.array([base_x, base_y, base_z]).T

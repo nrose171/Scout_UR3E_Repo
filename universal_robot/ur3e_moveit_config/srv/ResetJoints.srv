@@ -1,0 +1,3 @@
+int32 positionState
+---
+bool resetSuccessful

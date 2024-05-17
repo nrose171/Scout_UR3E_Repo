@@ -17,6 +17,7 @@ add_service_files(
   FILES
   GoToManipGP.srv
   GoToManipJoints.srv
+  ResetJoints.srv
 )
 
 ## Generate added messages and services with any dependencies listed here

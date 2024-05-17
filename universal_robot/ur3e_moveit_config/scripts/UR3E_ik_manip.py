@@ -179,7 +179,7 @@ class MoveGroupCommander(object):
         # plannerPipeline = "ompl"
         ref_frame = "base_link"
         planning_attempts = 100  # planning attempts
-        planning_time = 5  # [s] Planning time for computation
+        planning_time = 2  # [s] Planning time for computation
 
         move_group.set_planner_id(planner)
         # move_group.set_planning_pipeline_id(plannerPipeline)
@@ -192,7 +192,7 @@ class MoveGroupCommander(object):
         move_group.allow_replanning(True)
         move_group.clear_path_constraints()
         move_group.clear_trajectory_constraints()
-        move_group.set_goal_tolerance(0.01)
+        move_group.set_goal_tolerance(0.1) #0.01 
         move_group.set_num_planning_attempts(planning_attempts)
         move_group.set_planning_time(planning_time)
 
@@ -206,25 +206,31 @@ class MoveGroupCommander(object):
         self.eef_link = eef_link
         self.group_names = group_names
 
+    def reset_joints(self, jointState):
+        joint_goal = []
+
+        if jointState.positionState == 1:
+            joint_goal.append(pi)
+            joint_goal.append(-1.0 * pi/2)
+            joint_goal.append(0)
+            joint_goal.append(-1.0 * pi/2)
+            joint_goal.append(-1.0 * pi/2)
+            joint_goal.append(0)
+        else:
+            joint_goal.append(pi)
+            joint_goal.append(0)
+            joint_goal.append(pi/2)
+            joint_goal.append(-1.0 * pi/2)
+            joint_goal.append(pi/2)
+            joint_goal.append(0)
+
+        return self.go_to_joint_state(joint_goal)
+
     # Go to state based on joint angles
-    def go_to_joint_state(self, jointArr):
-
-        # Set Joint States
-        joint_goal = self.move_group.get_current_joint_values()
-
-        print("Heard: ")
-        print(jointArr.data)
-
-        for i  in range(6):
-            joint_goal[i] = jointArr.data[0]
-
-        # joint_goal[0] = 0
-        # joint_goal[1] = -tau / 8
-        # joint_goal[2] = 0
-        # joint_goal[3] = -tau / 4
-        # joint_goal[4] = 0
-        # joint_goal[5] = tau / 6  # 1/6 of a turn
-        # joint_goal[6] = 0
+    def go_to_joint_state(self, joint_goal):
+        global use_map
+        # Change to base_link ref frame
+        self.move_group.set_pose_reference_frame("base_link")
 
         # Execute Joint States
         success = self.move_group.go(joint_goal, wait=True)
@@ -236,11 +242,16 @@ class MoveGroupCommander(object):
         current_joints = self.move_group.get_current_joint_values()
         all_close(joint_goal, current_joints, 0.01)
 
+        # Change back to map reference frame
+        if use_map is True:
+            self.move_group.set_pose_reference_frame("map")
+
         # Return true if within tolerance
         return success
 
     def go_to_pose_goal(self, gp):
-        
+
+        self.move_group.set_pose_reference_frame("base_link")
         print("First GP")
         print(gp)
 
@@ -303,19 +314,33 @@ class MoveGroupCommander(object):
 
         ## END_SUB_TUTORIAL`
 
-def start_JointState_server():
-    s = rospy.Service('manip_joint_srv', GoToManipJoints, start_manip_joints)
-    print("Waiting for Manip Joint States")
-    rospy.spin()
+# def start_JointState_server():
+#     s = rospy.Service('manip_joint_srv', GoToManipJoints, start_manip_joints)
+#     print("Waiting for Manip Joint States")
+#     rospy.spin()
 
-def start_manip_joints(jointArr):
+# def start_manip_joints(jointArr):
+#     global commander
+#     try:
+#         print("Starting Manip GP Commander")
+
+#         if jointArr is not None:
+#             return commander.go_to_joint_state(jointArr)
+#         else:
+#             print("Please pass manipulator goal point")
+            
+#     except rospy.ROSInterruptException:
+#         return
+#     except KeyboardInterrupt:
+#         return
+    
+def reset_manip_joints(positionState):
+    global commander
     try:
         print("Starting Manip GP Commander")
-        
-        commander = MoveGroupCommander()
 
-        if jointArr is not None:
-            return commander.go_to_joint_state(jointArr)
+        if positionState is not None:
+            return commander.reset_joints(positionState)
         else:
             print("Please pass manipulator goal point")
             
@@ -324,11 +349,16 @@ def start_manip_joints(jointArr):
     except KeyboardInterrupt:
         return
 
+    
+def start_Reset_server():
+    s = rospy.Service('manip_reset_srv', ResetJoints, reset_manip_joints)
+    print("Waiting for reset joints")
+    # rospy.spin()
+
 def start_GoalPoint_server():
     s = rospy.Service('manip_gp_srv', GoToManipGP, start_manip_gp)
     print("Waiting for Manip Goal Point")
-    rospy.spin()
-
+    # rospy.spin()
 
 commander = MoveGroupCommander()
 
@@ -342,10 +372,10 @@ def start_manip_gp(gp):
             # cartesian = commander.attempt_cartesian_path(gp)
             # print(cartesian)
             # return cartesian
-            if cartesian == True:
-                return cartesian
-            else:
-                return commander.go_to_pose_goal(gp)
+            # if cartesian == True:
+            #     return cartesian
+            # else:
+            #     return commander.go_to_pose_goal(gp)
         else:
             print("Please pass manipulator goal point")
             
@@ -361,18 +391,22 @@ def main():
     rospy.init_node('scout_manip')
     args = sys.argv
 
-    if len(args) > 2 and args[2] == "joint":
-        print("Calling Joints")
-        start_JointState_server()
-    else:
-        if args[1] == "true":
-            use_map = True
-            print("CALLING TRUE")
-        elif args[1] == "false":
-            use_map = False
-            print("CALLING FALSE")
-        print("Calling GP")
-        start_GoalPoint_server()
+    # if len(args) > 2 and args[2] == "joint":
+    #     print("Calling Joints")
+    #     start_JointState_server()
+    # else:
+    if args[1] == "true":
+        use_map = True
+        print("CALLING TRUE")
+    elif args[1] == "false":
+        use_map = False
+        print("CALLING FALSE")
+    print("Calling GP")
+
+    # Start services
+    start_GoalPoint_server()
+    start_Reset_server()
+    rospy.spin()
 
 if __name__ == "__main__":
     main()
