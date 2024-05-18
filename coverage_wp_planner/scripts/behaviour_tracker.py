@@ -46,7 +46,7 @@ def create_graph_perform_dfs(pose_df, comp_boat_df, arm_base_point, max_dist_nod
         for j in range(i+1, len(pose_df)):
             if sum([int(abs(pose_df.iloc[i]['x'] - pose_df.iloc[j]['x']) <= 0.15),
                 int(abs(pose_df.iloc[i]['y'] - pose_df.iloc[j]['y']) <= 0.15),
-                int(abs(pose_df.iloc[i]['z'] - pose_df.iloc[j]['z']) <= 0.15)]) > 1:
+                int(abs(pose_df.iloc[i]['z'] - pose_df.iloc[j]['z']) <= 0.15)]) > 2:
                 # print(pose_df_idx[i], pose_df_idx[j])
                 G.add_edge(pose_df_idx[i], pose_df_idx[j])
 
@@ -415,7 +415,7 @@ class BehaviourTracker:
 
     def survey_sector(self, sector_index):
         boat_point_dist = self.boat_df[["x", "y", "z"]][(self.boat_df["visited"] == False)].sub(self.base_point, axis=1).pow(2).sum(axis=1).pow(.5)
-        unvisited_reachable_poses = self.boat_df.loc[(self.boat_df["visited"] == False) & (boat_point_dist < 1.1), :]
+        unvisited_reachable_poses = self.boat_df.loc[(self.boat_df["visited"] == False) & (boat_point_dist < 1.25), :]
         # print("unvisited_reachable_poses : ", len(unvisited_reachable_poses))
         # print(unvisited_reachable_poses)
         # unvisited_reachable_poses = all_reachable_poses[all_reachable_poses["visited"] == False]
