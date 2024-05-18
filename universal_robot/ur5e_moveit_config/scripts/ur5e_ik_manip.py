@@ -51,9 +51,10 @@ import rospy
 import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
-from geometry_msgs.msg import Pose, Quaternion
+from geometry_msgs.msg import PoseStamped, Pose, Quaternion
 from std_msgs.msg import String, Float32MultiArray
 from moveit_commander.conversions import pose_to_list, list_to_pose
+import rospkg
 
 # import ur5e_moveit_config
 from scout_ure.srv import *
@@ -126,6 +127,10 @@ class MoveGroupCommander(object):
 
         global use_map
 
+        ref_frame = "base_link"
+        if use_map is True:
+            ref_frame = "map"
+
         ## BEGIN_SUB_TUTORIAL setup
         ##
         ## First initialize `moveit_commander`_ and a `rospy`_ node:
@@ -139,6 +144,21 @@ class MoveGroupCommander(object):
         ## for getting, setting, and updating the robot's internal understanding of the
         ## surrounding world:
         scene = moveit_commander.PlanningSceneInterface()
+
+        # Load in boat
+        # boat_pose = geometry_msgs.msg.PoseStamped()
+        # boat_pose.header.frame_id = ref_frame
+        # boat_pose.pose.position.x = 7.53
+        # boat_pose.pose.position.y = -0.42
+        # boat_pose.pose.position.z = 0.0
+        # boat_pose.pose = rotate_pose(boat_pose, [pi/2, 0.00, pi])
+        # boat_scale = (7, 7, 7)
+
+        # rospack = rospkg.RosPack()
+        # boat_path = rospack.get_path('scout_ure') +"/gazebo_resources/models/boat/meshes/boat.dae"
+
+        # scene.add_mesh("boat", boat_pose, boat_path, boat_scale)
+        # scene.attach_mesh("base_link", "boat", boat_pose, boat_path, boat_scale)
 
         #  Set planning group 
         ## This interface can be used to plan and execute motions:
@@ -175,21 +195,20 @@ class MoveGroupCommander(object):
         # Setting Planning Params
         planner = "RRTConnect"
         # plannerPipeline = "ompl"
-        ref_frame = "base_link"
         planning_attempts = 100  # planning attempts
         planning_time = 5  # [s] Planning time for computation
 
         move_group.set_planner_id(planner)
         # move_group.set_planning_pipeline_id(plannerPipeline)
 
-        if use_map is True:
-            move_group.set_pose_reference_frame("map")
+        
+        move_group.set_pose_reference_frame(ref_frame)
 
         move_group.set_end_effector_link("wrist_3_link")
         # move_group.allow_looking(True)
         move_group.allow_replanning(True)
-        move_group.clear_path_constraints()
-        move_group.clear_trajectory_constraints()
+        # move_group.clear_path_constraints()
+        # move_group.clear_trajectory_constraints()
 
         move_group.set_goal_tolerance(0.1) #0.01 
         move_group.set_num_planning_attempts(planning_attempts)

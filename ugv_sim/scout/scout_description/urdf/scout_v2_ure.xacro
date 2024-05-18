@@ -146,7 +146,6 @@
       <origin xyz="0 0 0.005" rpy="${pi} 0 0"/>
     </joint> -->
 
-    <!-- LIDAR -->
     <!-- <xacro:property name="M_PI" value="3.1415926535897931" />
     <xacro:include filename="$(find velodyne_description)/urdf/VLP-16.urdf.xacro"/>
     <xacro:VLP-16 parent="scout_base_link" name="velodyne"
@@ -155,6 +154,8 @@
         min_range="0.9" max_range="130.0" noise="0.0" min_angle="-${M_PI}" max_angle="${M_PI}">
         <origin xyz="0 0 0.4" rpy="0 0 0" />
     </xacro:VLP-16> -->
+
+    <!-- LIDAR -->
 
     <link name="laser_frame">
       <inertial>
@@ -172,7 +173,8 @@
       <visual name="lidar_visual">
         <origin xyz="0 0 0.0" rpy="0 0 0"/>
         <geometry>
-          <mesh filename="$(find scout_description)/meshes/os1_64.stl" />
+          <!-- <mesh filename="$(find scout_description)/meshes/os1_64.stl" /> -->
+          <mesh filename="package://scout_description/meshes/lidar/hokuyo_utm_30lx.dae" />
         </geometry>
       </visual>
     </link>
@@ -183,59 +185,10 @@
       <origin xyz="${base_y_size+0.02} 0 ${0.1}" rpy="0 0 0"/>
     </joint>
 
-
-
-    <!-- <gazebo reference="laser_frame">
-        <sensor type="depth" name="l515">
-          <updateRate>10.0</updateRate> #30.0
-          <always_on>true</always_on>
-          <visualize>true</visualize>
-          <camera>
-            <updateRate>0.0</updateRate> #Keep this zero, update_rate in the parent sensor tag controls the frame rate.
-            <horizontal_fov>${70.0*pi/180}</horizontal_fov>
-            <image>
-              <width>1024</width>
-              <height>768</height>
-              <format>R8G8B8</format>
-            </image>
-            <depth_camera>
-            </depth_camera>
-            <clip>
-              <near>0.2</near>
-              <far>200</far>
-            </clip>
-          </camera>
-          <plugin name="camera_controller" filename="libgazebo_ros_openni_kinect.so">
-            <robotNamespace>$(arg robot_namespace)</robotNamespace>
-            <alwaysOn>true</alwaysOn>
-              <updateRate>0.0</updateRate> #Keep this zero, update_rate in the parent sensor tag controls the frame rate.
-              <cameraName>l515</cameraName>
-              <frameName>laser_frame</frameName>
-            <imageTopicName>color/image_raw</imageTopicName>
-            <depthImageTopicName>aligned_depth_to_color/image_raw</depthImageTopicName>
-            <depthImageCameraInfoTopicName>aligned_depth_to_color/camera_info</depthImageCameraInfoTopicName>
-            <pointCloudTopicName>depth/color/points</pointCloudTopicName>
-            <cameraInfoTopicName>color/camera_info</cameraInfoTopicName>
-            <pointCloudCutoff>5.0</pointCloudCutoff>
-            <pointCloudCutoffMax>500.0</pointCloudCutoffMax> #9.0
-              <hackBaseline>0.07</hackBaseline> #0.07
-              <distortionK1>0.0</distortionK1>
-              <distortionK2>0.0</distortionK2>
-              <distortionK3>0.0</distortionK3>
-              <distortionT1>0.0</distortionT1>
-              <distortionT2>0.0</distortionT2>
-            <CxPrime>0.0</CxPrime>
-            <Cx>0.0</Cx>
-            <Cy>0.0</Cy>
-            <focalLength>0.0</focalLength>
-          </plugin>
-        </sensor>
-      </gazebo> -->
-
-    <!-- Add lidar plugin for scan topic -->
+     <!-- Add lidar plugin for scan topic -->
     <gazebo reference="laser_frame">
         <material>Gazebo/Red</material>
- 
+
         <sensor name="laser" type="ray">
             <pose> 0 0 0 0 0 0 </pose>
             <visualize>true</visualize>
@@ -261,6 +214,78 @@
             </plugin>
         </sensor>
     </gazebo>
+
+    <!-- Depth Camera -->
+
+    <link name="depth_camera_link">
+        <visual>
+            <geometry>
+                <mesh filename="package://scout_description/meshes/camera/kinect.dae" scale="0.3 0.3 0.3"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+        </visual>
+        <!-- <collision>
+            <geometry>
+                <mesh filename="package://scout_description/meshes/camera/kinect.dae" scale="0.3 0.3 0.3"/>
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+        </collision> -->
+    </link>
+
+    <joint name="depth_camera_joint" type="fixed">
+      <parent link="wrist_3_link"/>
+      <child link="depth_camera_link"/>
+      <axis xyz="0 0 0" rpy="0 0 0" />
+      <!-- <origin xyz="0 0 0.005" rpy="${pi} 0 0"/> -->
+      <origin xyz="0 0 0.005" rpy="0 ${-pi/2}  0"/>
+    </joint>
+
+    <gazebo reference="depth_camera_link">
+        <sensor type="depth" name="kinect">
+          <updateRate>10.0</updateRate> #30.0
+          <always_on>true</always_on>
+          <visualize>true</visualize>
+          <camera>
+            <updateRate>0.0</updateRate> #Keep this zero, update_rate in the parent sensor tag controls the frame rate.
+            <horizontal_fov>${70.0*pi/180}</horizontal_fov>
+            <image>
+              <width>1024</width>
+              <height>768</height>
+              <format>R8G8B8</format>
+            </image>
+            <depth_camera>
+            </depth_camera>
+            <clip>
+              <near>0.2</near>
+              <far>200</far>
+            </clip>
+          </camera>
+          <plugin name="camera_controller" filename="libgazebo_ros_openni_kinect.so">
+            <robotNamespace>$(arg robot_namespace)</robotNamespace>
+            <alwaysOn>true</alwaysOn>
+              <updateRate>0.0</updateRate> #Keep this zero, update_rate in the parent sensor tag controls the frame rate.
+              <cameraName>kinect</cameraName>
+              <frameName>depth_camera_link</frameName>
+            <imageTopicName>color/image_raw</imageTopicName>
+            <depthImageTopicName>aligned_depth_to_color/image_raw</depthImageTopicName>
+            <depthImageCameraInfoTopicName>aligned_depth_to_color/camera_info</depthImageCameraInfoTopicName>
+            <pointCloudTopicName>depth/color/points</pointCloudTopicName>
+            <cameraInfoTopicName>color/camera_info</cameraInfoTopicName>
+            <pointCloudCutoff>5.0</pointCloudCutoff>
+            <pointCloudCutoffMax>500.0</pointCloudCutoffMax> #9.0
+              <hackBaseline>0.07</hackBaseline> #0.07
+              <distortionK1>0.0</distortionK1>
+              <distortionK2>0.0</distortionK2>
+              <distortionK3>0.0</distortionK3>
+              <distortionT1>0.0</distortionT1>
+              <distortionT2>0.0</distortionT2>
+            <CxPrime>0.0</CxPrime>
+            <Cx>0.0</Cx>
+            <Cy>0.0</Cy>
+            <focalLength>0.0</focalLength>
+          </plugin>
+        </sensor>
+      </gazebo>
 
     <!-- NOT WORKING: Gazebo ODOM plugin -->
     <!-- <gazebo>

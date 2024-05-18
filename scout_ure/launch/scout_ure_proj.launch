@@ -1,0 +1,23 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="map_file" default="$(find scout_ure)/maps/scout_map.yaml"/>
+  <arg name="ure_type" default="ur5e"/>
+  <arg name="use_manip_rviz" default="false"/>
+
+  <!-- Launch Boat -->
+  <node name="object_spawner_node" pkg="scout_ure" type="spawn_boat.py" />
+
+  <!-- Nav Node -->
+  <include file="$(find scout_ure)/launch/scout_ure_navigation.launch">
+    <arg name="ure_type" value="$(arg ure_type)"/>
+    <arg name="map_file" value="$(arg map_file)"/>
+  </include>
+
+  <!-- Manip Node  -->
+  <include file="$(find scout_ure)/launch/scout_ure_manip.launch">
+    <arg name="Use_RVIZ"   value="$(arg use_manip_rviz)"/>
+    <arg name="Use_Map_CF" value="true"/>
+    <arg name="ure_type" value="$(arg ure_type)"/>
+  </include>
+
+</launch>

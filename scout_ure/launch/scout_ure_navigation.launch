@@ -4,12 +4,12 @@
   <arg name="ure_type" default="ur5e"/>
 
   <!-- Scout URE -->
-  <include file="$(find scout_ure)/launch/scout_ure_empty_world.launch">
+  <!-- <include file="$(find scout_ure)/launch/scout_ure_empty_world.launch">
     <arg name="ure_type" value="$(arg ure_type)"/>
-  </include>
+  </include> -->
 
   <!-- Spawn Boat -->
-  <node name="object_spawner_node" pkg="scout_ure" type="spawn_boat.py" />
+  <!-- <node name="object_spawner_node" pkg="scout_ure" type="spawn_boat.py" /> -->
   <!-- <include file="$(find object_spawner)/launch/boat_spawner.launch"/> -->
 
   <!-- SLAM -->
