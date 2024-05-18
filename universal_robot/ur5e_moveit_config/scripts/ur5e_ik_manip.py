@@ -205,10 +205,10 @@ class MoveGroupCommander(object):
         move_group.set_pose_reference_frame(ref_frame)
 
         move_group.set_end_effector_link("wrist_3_link")
-        # move_group.allow_looking(True)
+        move_group.allow_looking(True)
         move_group.allow_replanning(True)
-        # move_group.clear_path_constraints()
-        # move_group.clear_trajectory_constraints()
+        move_group.clear_path_constraints()
+        move_group.clear_trajectory_constraints()
 
         move_group.set_goal_tolerance(0.1) #0.01 
         move_group.set_num_planning_attempts(planning_attempts)
@@ -255,6 +255,10 @@ class MoveGroupCommander(object):
         global use_map
         # Change to base_link ref frame
         self.move_group.set_pose_reference_frame("base_link")
+        planning_attempts = 1000  # planning attempts
+        planning_time = 15  # [s] Planning time for computation
+        self.move_group.set_num_planning_attempts(planning_attempts)
+        self.move_group.set_planning_time(planning_time)
 
         # Execute Joint States
         success = self.move_group.go(joint_goal, wait=True)
@@ -269,6 +273,11 @@ class MoveGroupCommander(object):
         # Change back to map reference frame
         if use_map is True:
             self.move_group.set_pose_reference_frame("map")
+
+        planning_attempts = 100  # planning attempts
+        planning_time = 5  # [s] Planning time for computation
+        self.move_group.set_num_planning_attempts(planning_attempts)
+        self.move_group.set_planning_time(planning_time)
 
         # Return true if within tolerance
         return success

@@ -4,9 +4,6 @@
   <arg name="ure_type" default="ur5e"/>
   <arg name="use_manip_rviz" default="false"/>
 
-  <!-- Launch Boat -->
-  <node name="object_spawner_node" pkg="scout_ure" type="spawn_boat.py" />
-
   <!-- Nav Node -->
   <include file="$(find scout_ure)/launch/scout_ure_navigation.launch">
     <arg name="ure_type" value="$(arg ure_type)"/>

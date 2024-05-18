@@ -353,6 +353,31 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSI
       </link>
       <pose>-3 -10 0 0 -0 0</pose>
     </model>
+    <model name="boat">
+      <pose>0 0 0 0 0 0</pose>
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>model://boat/meshes/boat.dae</uri>
+            </mesh>
+          </geometry>
+          <surface>
+            <contact>
+              <collide_without_contact>true</collide_without_contact>
+            </contact>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <mesh>
+              <uri>model://boat/meshes/boat.dae</uri>
+            </mesh>
+          </geometry>
+        </visual>
+      </link>
+    </model>
     <model name='jersey_barrier_1'>
       <static>1</static>
       <link name='link'>

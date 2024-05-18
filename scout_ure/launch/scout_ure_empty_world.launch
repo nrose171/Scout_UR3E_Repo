@@ -5,6 +5,7 @@
 
     <!-- Type of URE -->
     <arg name="ure_type" default="ur5e"/>
+    <arg name="world_type" default="collision"/>
 
     <!-- Scout files -->
 
@@ -56,7 +57,7 @@
     <arg name="urdf_extras" default="$(find scout_description)/urdf/empty.urdf"/>
 
     <!-- <arg name="world_name" default="worlds/empty.world" doc="The '.world' file to load in Gazebo." /> -->
-    <arg name="world_name" default="$(find scout_ure)/worlds/scout_playpen.world"/>
+    <arg name="world_name" default="$(find scout_ure)/worlds/scout_playpen_$(arg world_type).world"/>
 
     <!-- Start Gazebo -->
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
