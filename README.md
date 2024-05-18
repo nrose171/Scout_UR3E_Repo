@@ -4,7 +4,9 @@ ROS Noetic \
 UGV_SIM \
 Scout_Gazebo \
 Industrial Robotics UR \
-move_base \
+ros navigation stack \
+gmapping \
+ros moveit \
 object_spawner 
 
 To Build: \
@@ -18,11 +20,11 @@ To source: \
 cd catkin_ws \
 source devel/setup.bash 
 
-To run navigation: \
-roslaunch scout_ur3e scout_ur3e_navigation.launch 
+To start gazebo world: \
+roslaunch scout_ure scout_ure_empty_world.launch
 
-To run moveit: \
-roslaunch scout_ur3e scout_ur3e_manip.launch Use_RVIZ:=true 
+To run navigation and moveit: \
+roslaunch scout_ure scout_ure_proj.launch
 
 To run behavior tracker: \
-roslaunch coverage_wp_planner waypoint2twist.launch 
+roslaunch coverage_wp_planner behavior_tracker.launch 
